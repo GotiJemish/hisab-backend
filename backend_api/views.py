@@ -28,5 +28,8 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key})
+            return Response({
+                "token": token.key,
+                "user_id": str(user.user_id)
+            })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
