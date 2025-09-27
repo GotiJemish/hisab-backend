@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import User, EmailOTP
 from django.contrib.auth import authenticate
+from django.utils.translation import gettext_lazy as _
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -62,10 +63,19 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         email = data.get('email')
         password = data.get('password')
-        user = authenticate(username=email, password=password)  # username=email is important here
+
+        if not email or not password:
+            raise serializers.ValidationError(_("Both email and password are required."))
+
+        # Authenticate using email as the username field
+        user = authenticate(username=email, password=password)
+
         if not user:
-            raise serializers.ValidationError("Invalid credentials or user not verified.")
+            raise serializers.ValidationError(_("Invalid credentials or user not verified."))
+
         if not user.is_active:
-            raise serializers.ValidationError("Account not active. Verify your email.")
+            raise serializers.ValidationError(_("Account is inactive. Please verify your email."))
+
+        # Attach user to validated data
         data['user'] = user
         return data
