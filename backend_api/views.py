@@ -3,6 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer, OTPVerifySerializer, LoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .token import CustomTokenObtainPairSerializer
+
+
 
 
 class RegisterView(APIView):
@@ -20,6 +24,10 @@ class VerifyOTPView(APIView):
         if serializer.is_valid():
             return Response({"detail": "Email verified. You can now log in."})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 
 class LoginView(APIView):
