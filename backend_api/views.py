@@ -7,8 +7,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .token import CustomTokenObtainPairSerializer
 
 
-
-
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
