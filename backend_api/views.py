@@ -34,6 +34,11 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
+
+            # Add custom claims manually
+            refresh['user_id'] = str(user.user_id)
+            refresh['email'] = user.email
+
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
