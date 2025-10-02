@@ -1,0 +1,7 @@
+psycopg2
+djangorestframework
+django-cors-headers
+dotenv
+djangorestframework-simplejwt
+
+# pip install -r requirements.txt

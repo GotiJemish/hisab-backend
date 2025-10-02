@@ -28,9 +28,9 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
-    user_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True) 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # ✅ Replaces 'user_id'
     email = models.EmailField(unique=True)
-    is_active = models.BooleanField(default=False)  # Until verified via OTP
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
