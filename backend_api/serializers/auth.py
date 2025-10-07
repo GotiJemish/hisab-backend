@@ -1,11 +1,10 @@
-from django.core.cache import cache
-from rest_framework import serializers
-from .models import User, EmailOTP,Contact,Invoice, InvoiceItem
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.hashers import make_password
-
-
+from rest_framework import serializers
+from django.core.cache import cache
+from backend_api.models import User, EmailOTP,Contact,Invoice, InvoiceItem
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class RegisterSerializer(serializers.ModelSerializer):
     user_id = serializers.UUIDField(read_only=True)
@@ -105,55 +104,23 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
-class ContactSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Contact
-        fields = ['id', 'name', 'mobile', 'email', 'created_at']
-        read_only_fields = ['id', 'created_at']
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
 
+        # Add custom claims to the token
+        token['user_id'] = str(user.user_id)  # UUID or int
+        token['email'] = user.email
+        return token
 
-class InvoiceItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InvoiceItem
-        fields = ['description', 'quantity', 'rate', 'discount']
+    def validate(self, attrs):
+        data = super().validate(attrs)
 
-
-class InvoiceSerializer(serializers.ModelSerializer):
-    items = InvoiceItemSerializer(many=True)
-
-    class Meta:
-        model = Invoice
-        fields = ['contact', 'supply_type', 'invoice_date', 'items']
-
-    def validate_contact(self, contact):
-        user = self.context['request'].user
-        if contact.user != user:
-            raise serializers.ValidationError("You can only create invoices for your own contacts.")
-        return contact
-
-    def create(self, validated_data):
-        items_data = validated_data.pop('items')
-        user = self.context['request'].user
-
-        invoice = Invoice.objects.create(user=user, **validated_data)
-
-        total_amount = 0
-        for item_data in items_data:
-            quantity = item_data['quantity']
-            rate = item_data['rate']
-            discount = item_data.get('discount', 0)
-
-            total = (quantity * rate) - discount
-            total_amount += total
-
-            InvoiceItem.objects.create(
-                invoice=invoice,
-                total=total,
-                **item_data
-            )
-
-        invoice.total_amount = total_amount
-        invoice.save()
-
-        return invoice
+        # Optionally include user info in the response
+        data.update({
+            'user_id': str(self.user.user_id),
+            'email': self.user.email,
+        })
+        return data

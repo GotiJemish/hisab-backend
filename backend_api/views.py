@@ -2,10 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .serializers import RegisterSerializer,ContactSerializer, OTPVerifySerializer, LoginSerializer,InvoiceSerializer
+from .serializers import RegisterSerializer,ContactSerializer, OTPVerifySerializer, LoginSerializer,InvoiceSerializer,CustomTokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .token import CustomTokenObtainPairSerializer
 
 class RegisterView(APIView):
     def post(self, request):
