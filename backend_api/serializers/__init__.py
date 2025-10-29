@@ -1,3 +1,5 @@
-from .auth import RegisterSerializer,OTPVerifySerializer,LoginSerializer,CustomTokenObtainPairSerializer
+from .auth import *
 from .invoice import InvoiceItemSerializer,InvoiceSerializer
 from .contact import ContactSerializer
+from .forgot_password import ForgotPasswordSerializer,VerifyForgotOTPSerializer,ResetPasswordSerializer
+# from .resend_otp import ResetPasswordSerializer,VerifyForgotOTPSerializer,ForgotPasswordSerializer
