@@ -1,4 +1,4 @@
-
+# backend_api/models/contacts.py
 from django.db import models
 from .user import User
 

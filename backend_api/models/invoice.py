@@ -1,16 +1,8 @@
-import uuid
+# backend_api/models/invoice.py
 from django.db import models
 from .user import User
 from .contacts import Contact  # Assuming Contact model is already created
 from django.utils import timezone
-
-
-
-# def generate_unique_bill_id():
-#     return uuid.uuid4().hex[:10].upper()  # 10-char uppercase unique string
-
-
-
 
 class Invoice(models.Model):
     bill_id = models.CharField(max_length=30, unique=True, editable=False)
