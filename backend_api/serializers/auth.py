@@ -18,9 +18,19 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError({"success": False, "message": "This email is already registered."})
-        return value
+        try:
+            user = User.objects.get(email=value)
+            if user.is_verified:
+                # ✅ Email belongs to a verified user — block registration
+                raise serializers.ValidationError({
+                    "success": False,
+                    "message": "This email is already registered and verified. Please log in instead."
+                })
+            # ⚙️ If not verified, allow registration to continue
+            return value
+        except User.DoesNotExist:
+            # ✅ Email not found — okay to register
+            return value
 
     def create(self, validated_data):
         email = validated_data['email']
@@ -67,77 +77,41 @@ class VerifyRegisterOTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6)
 
     def validate(self, data):
-        email, otp = data['email'], data['otp']
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError({"success": False, "message": "User not found."})
-
-        otp_entry = EmailOTP.objects.filter(
-            user=user,
-            otp=otp,
-            purpose='register',
-            is_verified=False,
-            created_at__gte=timezone.now() - timedelta(minutes=10)
-        ).last()
-
-        if not otp_entry:
-            raise serializers.ValidationError({"success": False, "message": "Invalid or expired OTP."})
-
-        otp_entry.is_verified = True
-        otp_entry.save()
-        user.is_active = True
-        user.save()
-
-        return {
-            "success": True,
-            "message": "Email verified successfully. Account activated.",
-            "data": {"email": user.email, "user_id": str(user.id)}
-        }
-
-# 2️⃣ VERIFY REGISTER OTP
-class VerifyRegisterOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    otp = serializers.CharField(max_length=6)
-
-    def validate(self, data):
         email = data.get("email")
         otp = data.get("otp")
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError({"success": False,"message":"User not found."})
-        # 🧩 2. Find a valid OTP within 10 minutes window
+            raise serializers.ValidationError({"success": False, "message": "User not found."})
+
         valid_from = timezone.now() - timedelta(minutes=10)
         otp_entry = (
-            EmailOTP.objects
-            .filter(
+            EmailOTP.objects.filter(
                 user=user,
                 otp=otp,
                 purpose="register",
                 is_verified=False,
                 created_at__gte=valid_from
             ).last()
-            )
+        )
 
         if not otp_entry:
-            raise serializers.ValidationError({
-                "success": False,
-                "message": "Invalid or expired OTP. Please request a new one."
-            })
+            raise serializers.ValidationError({"success": False, "message": "Invalid or expired OTP."})
 
-        # 🧩 3. Mark OTP as verified & activate user
+        # ✅ Mark OTP verified and update user
         otp_entry.is_verified = True
         otp_entry.save(update_fields=["is_verified"])
-        user.is_active = True
-        user.save(update_fields=["is_active"])
 
-        # 🧩 4. Store success data for `create()`
+        user.is_verified = True     # ✅ user is now verified
+        user.is_active = True       # ✅ allow login
+        user.save(update_fields=["is_verified", "is_active"])
+
+        # ✅ Delete all OTPs for this user/purpose
+        EmailOTP.objects.filter(user=user, purpose="register").delete()
+
         data["user"] = user
         return data
-
     def create(self, validated_data):
         user = validated_data["user"]
         return {
@@ -160,8 +134,9 @@ class SetPasswordSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found.")
 
-        if not user.is_active:
-            raise serializers.ValidationError("Email not verified yet.")
+        if not user.is_verified:
+            raise serializers.ValidationError("Email not verified yet. Please verify your account first.")
+
         data['user'] = user
         return data
 
@@ -182,18 +157,13 @@ class LoginSerializer(serializers.Serializer):
 
         if not user:
             raise serializers.ValidationError({"success": False, "message": "Invalid credentials."})
-        if not user.is_active:
-            raise serializers.ValidationError(
-                {"success": False, "message": "Account inactive. Verify your email first."})
-        return {
-            "success": True,
-            "message": "Login successful.",
-            "data": {
-                "user_id": str(user.id),
-                "email": user.email,
-            }
-        }
 
+        if not user.is_verified:
+            raise serializers.ValidationError({"success": False, "message": "Account not verified. Please verify your email first."})
+
+        # ✅ Return user so the view can access it
+        data["user"] = user
+        return data
 
 # 5️⃣ RESEND OTP SERIALIZER
 class ResendOTPSerializer(serializers.Serializer):

@@ -9,7 +9,6 @@ from backend_api.serializers import RegisterSerializer, VerifyRegisterOTPSeriali
     CustomTokenObtainPairSerializer, LoginSerializer, ResendOTPSerializer, ForgotPasswordSerializer, \
     VerifyForgotOTPSerializer, ResetPasswordSerializer
 
-
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -17,7 +16,6 @@ class RegisterView(APIView):
             serializer.save()
             return Response({"detail": "OTP sent to your email."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class VerifyRegisterOTPView(APIView):
     def post(self, request):
@@ -35,12 +33,8 @@ class SetPasswordView(APIView):
             return Response(result, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
-
 
 class LoginView(APIView):
     def post(self, request):
@@ -57,7 +51,6 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class ResendOTPView(APIView):
     def post(self, request):
         serializer = ResendOTPSerializer(data=request.data)
@@ -73,14 +66,12 @@ class ForgotPasswordView(APIView):
             return Response({"detail": "OTP sent to your email for password reset."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class VerifyForgotOTPView(APIView):
     def post(self, request):
         serializer = VerifyForgotOTPSerializer(data=request.data)
         if serializer.is_valid():
             return Response({"detail": "OTP verified successfully. You can now reset your password."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ResetPasswordView(APIView):
     def post(self, request):
