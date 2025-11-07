@@ -1,6 +1,6 @@
-# backend_api/urls.py
+# backend_api/urls/auth_urls.py
 from django.urls import path
-from .views import (
+from backend_api.views import (
     RegisterView, VerifyRegisterOTPView, LoginView, CustomTokenObtainPairView,
     ForgotPasswordView, VerifyForgotOTPView, ResetPasswordView,SetPasswordView
 )

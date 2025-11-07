@@ -62,8 +62,10 @@ class VerifyForgotOTPSerializer(serializers.Serializer):
 
         otp_entry.is_verified = True
         otp_entry.save()
-        data['user'] = user
-        return data
+        return {
+            "email": user.email,
+            "user_id": str(user.id)
+        }
 
     def create(self, validated_data):
         return {"success": True, "message": "OTP verified successfully."}

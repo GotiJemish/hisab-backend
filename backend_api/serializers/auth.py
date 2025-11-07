@@ -77,51 +77,56 @@ class VerifyRegisterOTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6)
 
     def validate(self, data):
-        email = data.get("email")
-        otp = data.get("otp")
+        email, otp = data['email'], data['otp']
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError({"success": False, "message": "User not found."})
 
-        valid_from = timezone.now() - timedelta(minutes=10)
-        otp_entry = (
-            EmailOTP.objects.filter(
-                user=user,
-                otp=otp,
-                purpose="register",
-                is_verified=False,
-                created_at__gte=valid_from
-            ).last()
-        )
-
+        # valid_from = timezone.now() - timedelta(minutes=10)
+        otp_entry = EmailOTP.objects.filter(
+            user=user,
+            otp=otp,
+            purpose='register',
+            is_verified=False,
+            created_at__gte = timezone.now() - timedelta(minutes=10)
+        ).last()
         if not otp_entry:
-            raise serializers.ValidationError({"success": False, "message": "Invalid or expired OTP."})
+            raise serializers.ValidationError({
+                "success": False,
+                "message": "Invalid or expired OTP."
+            })
+        # OTP expired (>10 minutes old)
+        # if otp_entry.created_at < timezone.now() - timedelta(minutes=10):
+        #     raise serializers.ValidationError({
+        #         "success": False,
+        #         "message": "OTP expired. Please register again."
+        #     })
 
-        # ✅ Mark OTP verified and update user
+        # ✅ Mark verified
         otp_entry.is_verified = True
-        otp_entry.save(update_fields=["is_verified"])
+        otp_entry.save()
 
-        user.is_verified = True     # ✅ user is now verified
-        user.is_active = True       # ✅ allow login
-        user.save(update_fields=["is_verified", "is_active"])
+        # ✅ Mark user verified
+        user.is_verified = True
+        user.is_active = True
+        user.save()
 
         # ✅ Delete all OTPs for this user/purpose
         EmailOTP.objects.filter(user=user, purpose="register").delete()
 
-        data["user"] = user
-        return data
-    def create(self, validated_data):
-        user = validated_data["user"]
         return {
             "success": True,
-            "message": "Email verified successfully. Account activated.",
+            "message": "Email verified successfully.",
             "data": {
                 "email": user.email,
-                "user_id": str(user.id)
-            }
+                "user_id": str(user.id),
+            },
         }
+    def create(self, validated_data):
+        return validated_data
+
 
 # 3️⃣ SET PASSWORD AFTER VERIFICATION
 class SetPasswordSerializer(serializers.Serializer):
