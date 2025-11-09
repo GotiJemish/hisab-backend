@@ -33,12 +33,26 @@ class Contact(models.Model):
     )
 
     # 🏠 Address Details
+    main_address = models.TextField(blank=True, help_text="Main address for this contact.")
     billing_address = models.TextField(blank=True, help_text="Billing address for this contact.")
-    shipping_address = models.TextField(blank=True, help_text="Shipping address for this contact.")
     city = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, blank=True, default="India")
     pincode = models.CharField(max_length=20, blank=True)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    PAYMENT_TYPE_CHOICES = [
+        ("receivable", "Receivable"),
+        ("payable", "Payable"),
+    ]
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default="receivable")
+
+    PAYMENT_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("completed", "Completed"),
+        ("overdue", "Overdue"),
+        ("cancelled", "Cancelled"),
+    ]
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default="pending")
 
     # 🗒️ Miscellaneous
     notes = models.TextField(blank=True, help_text="Any additional notes about this contact.")
