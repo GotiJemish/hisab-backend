@@ -31,7 +31,6 @@ class Contact(models.Model):
         null=True,
         help_text="GSTIN (optional, 15 characters)."
     )
-
     # 🏠 Address Details
     main_address = models.TextField(blank=True, help_text="Main address for this contact.")
     billing_address = models.TextField(blank=True, help_text="Billing address for this contact.")
