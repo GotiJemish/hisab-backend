@@ -31,13 +31,20 @@ class Contact(models.Model):
         null=True,
         help_text="GSTIN (optional, 15 characters)."
     )
-    # 🏠 Address Details
-    main_address = models.TextField(blank=True, help_text="Main address for this contact.")
-    billing_address = models.TextField(blank=True, help_text="Billing address for this contact.")
-    city = models.CharField(max_length=100, blank=True)
-    state = models.CharField(max_length=100, blank=True)
-    country = models.CharField(max_length=100, blank=True, default="India")
-    pincode = models.CharField(max_length=20, blank=True)
+    # 🏠 Billing Address
+    billing_address = models.TextField(blank=True)
+    billing_city = models.CharField(max_length=100, blank=True)
+    billing_state = models.CharField(max_length=100, blank=True)
+    billing_pincode = models.CharField(max_length=20, blank=True)
+
+    # 📦 Shipping Address
+    same_as_billing = models.BooleanField(default=False)
+    shipping_address = models.TextField(blank=True)
+    shipping_city = models.CharField(max_length=100, blank=True)
+    shipping_state = models.CharField(max_length=100, blank=True)
+    shipping_pincode = models.CharField(max_length=20, blank=True)
+
+    # 💰 Payment
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     PAYMENT_TYPE_CHOICES = [
         ("receivable", "Receivable"),
@@ -70,3 +77,11 @@ class Contact(models.Model):
     # 📘 String Representation
     def __str__(self):
         return f"{self.name} ({self.mobile})"
+    def save(self, *args, **kwargs):
+        if self.same_as_billing:
+            self.shipping_address = self.billing_address
+            self.shipping_city = self.billing_city
+            self.shipping_state = self.billing_state
+            self.shipping_pincode = self.billing_pincode
+
+        super().save(*args, **kwargs)

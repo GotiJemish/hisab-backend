@@ -10,6 +10,10 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'user', 'created_at', 'updated_at')
 
+        # -----------------------------
+        # VALIDATIONS
+        # -----------------------------
+
     def validate_mobile(self, value):
         if not re.match(r'^\+?\d+$', value):
             raise serializers.ValidationError("Mobile number must contain only digits or start with '+'.")
@@ -28,6 +32,22 @@ class ContactSerializer(serializers.ModelSerializer):
         if value and not re.match(r'^[0-9A-Z]{15}$', value):
             raise serializers.ValidationError("Invalid GST format. It should be 15 alphanumeric characters.")
         return value
+
+    # -----------------------------
+    # AUTO-COPY SHIPPING IF CHECKED
+    # -----------------------------
+    def validate(self, attrs):
+        same = attrs.get("same_as_billing", None)
+
+        if same:
+            attrs["shipping_address"] = attrs.get("billing_address")
+            attrs["shipping_city"] = attrs.get("billing_city")
+            attrs["shipping_state"] = attrs.get("billing_state")
+            attrs["shipping_pincode"] = attrs.get("billing_pincode")
+
+        return attrs
+
+
     # def create(self, validated_data):
     #     # Automatically assign logged-in user
     #     user = self.context['request'].user
