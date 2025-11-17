@@ -15,7 +15,7 @@ class ContactViewSet(viewsets.ModelViewSet):
     serializer_class = ContactSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'mobile', 'email', 'billing_city', 'billing_state']
+    search_fields = ['name', 'mobile', 'email', 'billing_city', 'billing_state','billing_country']
     ordering_fields = ['created_at', 'name']
 
     # def filter_queryset(self, queryset):

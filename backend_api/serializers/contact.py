@@ -44,6 +44,7 @@ class ContactSerializer(serializers.ModelSerializer):
             attrs["shipping_city"] = attrs.get("billing_city")
             attrs["shipping_state"] = attrs.get("billing_state")
             attrs["shipping_pincode"] = attrs.get("billing_pincode")
+            attrs["shipping_country"] = attrs.get("billing_country")
 
         return attrs
 

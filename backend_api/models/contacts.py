@@ -36,13 +36,14 @@ class Contact(models.Model):
     billing_city = models.CharField(max_length=100, blank=True)
     billing_state = models.CharField(max_length=100, blank=True)
     billing_pincode = models.CharField(max_length=20, blank=True)
-
+    billing_country = models.CharField(max_length=100, blank=True)
     # 📦 Shipping Address
     same_as_billing = models.BooleanField(default=False)
     shipping_address = models.TextField(blank=True)
     shipping_city = models.CharField(max_length=100, blank=True)
     shipping_state = models.CharField(max_length=100, blank=True)
     shipping_pincode = models.CharField(max_length=20, blank=True)
+    shipping_country = models.CharField(max_length=100, blank=True)
 
     # 💰 Payment
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
