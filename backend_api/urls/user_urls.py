@@ -2,7 +2,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from backend_api.views import ContactViewSet, ItemsViewSet
+from backend_api.views import ContactViewSet, ItemsViewSet,InvoiceViewSet
+
 
 router = DefaultRouter()
 
@@ -18,6 +19,7 @@ router = DefaultRouter()
 # GET /contacts/?ordering=name
 router.register(r'contacts', ContactViewSet, basename='contact')
 router.register(r'items', ItemsViewSet, basename='item')
+router.register(r'invoices', InvoiceViewSet, basename='invoice')
 
 urlpatterns = [
     path('', include(router.urls)),

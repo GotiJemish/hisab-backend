@@ -1,11 +1,16 @@
+from uuid import uuid4
+
 from django.db import models
 from django.utils import timezone
 from .user import User
 from .contacts import Contact
 from .invoice_item import InvoiceItem
+from django.utils.crypto import get_random_string
 
 class Invoice(models.Model):
-    bill_id = models.CharField(max_length=30, unique=True, editable=False)
+    bill_id = models.CharField(max_length=30, unique=True, blank=True)
+    invoice_number = models.CharField(max_length=30, unique=True, blank=True)
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
 
     # Party
@@ -47,23 +52,49 @@ class Invoice(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def generate_bill_id(self):
+        today = timezone.now().date().strftime("%Y%m%d")
+        prefix = f"INV{today}"
+
+        last_invoice = Invoice.objects.filter(
+            bill_id__startswith=prefix
+        ).order_by("-bill_id").first()
+
+        if last_invoice:
+            last_number = int(last_invoice.bill_id.split("-")[-1])
+            new_number = last_number + 1
+        else:
+            new_number = 1
+
+        return f"{prefix}-{new_number:04d}"
+
+    def generate_invoice_number(self):
+        today = timezone.now().date()
+        prefix = today.strftime("%b").upper()
+        yydd = today.strftime("%y%d")
+
+        base = f"{prefix}-{yydd}"
+
+        last_invoice = Invoice.objects.filter(
+            invoice_number__startswith=base
+        ).order_by("-invoice_number").first()
+
+        if last_invoice:
+            last4 = int(last_invoice.invoice_number[-4:])
+            new_last4 = last4 + 1
+        else:
+            new_last4 = 1
+
+        return f"{base}{new_last4:04d}"
+
     def save(self, *args, **kwargs):
-        # auto-generate bill_id on create
         if not self.bill_id:
-            today = timezone.now().date()
-            today_str = today.strftime('%Y%m%d')
+            self.bill_id = self.generate_bill_id()
 
-            count_today = Invoice.objects.filter(
-                user=self.user,
-                created_at__date=today
-            ).count() + 1
-
-            self.bill_id = f"INV{today_str}-{count_today:04d}"
+        if not self.invoice_number:
+            self.invoice_number = self.generate_invoice_number()
 
         super().save(*args, **kwargs)
-
-        # After saving invoice → update total amount from child items
-        self.update_total()
 
     def update_total(self):
         """Recalculate invoice total from all items."""

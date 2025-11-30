@@ -3,3 +3,4 @@ from .invoice import *
 from .contact import *
 from .forgot_password import *
 from .items import *
+from .invoice import *
