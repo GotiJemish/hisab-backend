@@ -21,6 +21,9 @@ router.register(r'contacts', ContactViewSet, basename='contact')
 router.register(r'items', ItemsViewSet, basename='item')
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
 
+
+
 urlpatterns = [
     path('', include(router.urls)),
+    path("invoices/invoice-number/", InvoiceViewSet.as_view({"get": "next_invoice_number"})),
 ]

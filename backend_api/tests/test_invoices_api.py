@@ -340,7 +340,7 @@ class TestInvoiceAdvanced:
         user, contact = setup_user
         invoice = Invoice.objects.create(user=user, contact=contact, invoice_type="default")
 
-        today = timezone.now().date().strftime("%Y%m%d")
+        today = timezone.now().date().strftime("%d%m%y")
         assert invoice.bill_id.startswith(f"INV{today}-")
 
         suffix = invoice.bill_id.split("-")[-1]

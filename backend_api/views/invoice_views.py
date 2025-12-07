@@ -1,13 +1,16 @@
 
 # backend_api/views/invoice_views.py
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework import viewsets, status
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from backend_api.models import Invoice
 from backend_api.serializers.invoice import InvoiceSerializer
+from backend_api.utils.invoice_utils import get_missing_invoice_numbers, get_next_invoice_number
 from backend_api.utils.response_utils import success_response, error_response
-
+from datetime import datetime
 class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
@@ -19,6 +22,44 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Invoice.objects.filter(user=self.request.user).order_by("-created_at")
 
+    # ------------------------------------------------------
+    # API: GET missing invoice numbers for selected date
+    # ------------------------------------------------------
+    @action(detail=False, methods=["GET"], url_path="invoice-number")
+    def invoice_number(self, request):
+        date_str = request.query_params.get("date")
+        if not date_str:
+            return error_response({"error": "date is required"}, status=400)
+
+        from datetime import datetime
+
+        # Try DD-MM-YYYY first
+        parsed_date = None
+        try:
+            parsed_date = datetime.strptime(date_str, "%d-%m-%Y").date()
+        except ValueError:
+            try:
+                # Try YYYY-MM-DD fallback
+                parsed_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return error_response(
+                    {"date": "Date must be in DD-MM-YYYY or YYYY-MM-DD format"},
+                    status=400
+                )
+
+        user = request.user
+
+        missing = get_missing_invoice_numbers(user, parsed_date)
+        next_number = get_next_invoice_number(user, parsed_date)
+
+        return success_response(
+           "Invoice numbers fetched successfully.",
+            {
+                "missing_numbers": missing,
+                "next_invoice_number": next_number
+            },
+
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
