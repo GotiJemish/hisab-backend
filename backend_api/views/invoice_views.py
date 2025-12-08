@@ -7,6 +7,7 @@ from rest_framework import viewsets, status
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from backend_api.models import Invoice
+from backend_api.pagination import InvoicePagination
 from backend_api.serializers.invoice import InvoiceSerializer
 from backend_api.utils.invoice_utils import get_missing_invoice_numbers, get_next_invoice_number
 from backend_api.utils.response_utils import success_response, error_response
@@ -14,7 +15,8 @@ from datetime import datetime
 class InvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
-
+    pagination_class = InvoicePagination
+    queryset = Invoice.objects.all()
     filter_backends = [SearchFilter, DjangoFilterBackend]
     search_fields = ["bill_id", "invoice_number", "invoice_type", "notes"]
     filterset_fields = ["invoice_type", "supply_type", "invoice_date", "total_amount"]
@@ -29,7 +31,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def invoice_number(self, request):
         date_str = request.query_params.get("date")
         if not date_str:
-            return error_response({"error": "date is required"}, status=400)
+            return error_response({"error": "date is required"}, status.HTTP_400_BAD_REQUEST)
 
         from datetime import datetime
 
@@ -44,7 +46,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             except ValueError:
                 return error_response(
                     {"date": "Date must be in DD-MM-YYYY or YYYY-MM-DD format"},
-                    status=400
+                    status.HTTP_400_BAD_REQUEST,
                 )
 
         user = request.user
@@ -58,7 +60,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
                 "missing_numbers": missing,
                 "next_invoice_number": next_number
             },
-
+status.HTTP_201_CREATED
         )
 
     def create(self, request, *args, **kwargs):
@@ -75,8 +77,19 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def list(self, request, *args, **kwargs):
-        invoices = self.get_queryset()
-        serializer = self.get_serializer(invoices, many=True)
+        queryset = self.get_queryset()
+        # Apply pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            paginated_response = self.get_paginated_response(serializer.data)
+            return success_response(
+                "Invoices fetched successfully.",
+                paginated_response.data
+            )
+
+        # If pagination is disabled, fallback
+        serializer = self.get_serializer(queryset, many=True)
         return success_response("Invoices fetched successfully.", serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
