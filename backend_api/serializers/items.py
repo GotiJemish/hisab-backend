@@ -2,15 +2,21 @@
 
 from rest_framework import serializers
 from backend_api.models import Items
-import re
 
 
 class ItemSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Items
         fields = "__all__"
         read_only_fields = ("id", "user", "created_at", "updated_at")
+        extra_kwargs = {
+            "name": {
+                "error_messages": {
+                    "blank": "Item name cannot be empty.",
+                    "required": "Item name cannot be empty.",
+                }
+            }
+        }
 
     # -----------------------------
     # FIELD-LEVEL VALIDATIONS
@@ -39,9 +45,9 @@ class ItemSerializer(serializers.ModelSerializer):
         discount = attrs.get("discount", 0)
 
         if discount and discount > rate:
-            raise serializers.ValidationError({
-                "discount": "Discount cannot be greater than rate."
-            })
+            raise serializers.ValidationError(
+                {"discount": "Discount cannot be greater than rate."}
+            )
 
         return attrs
 

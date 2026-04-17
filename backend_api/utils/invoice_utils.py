@@ -5,9 +5,9 @@ from backend_api.models import Invoice
 # Build prefix based on date
 # ------------------------------
 def get_invoice_prefix(date):
-    prefix = date.strftime("%b").upper()       # JAN
-    yydd = date.strftime("%y%d")               # 2507
-    return f"{prefix}-{yydd}"                  # JAN-2507
+    prefix = date.strftime("%b").upper()  # JAN
+    yydd = date.strftime("%y%d")  # 2507
+    return f"{prefix}-{yydd}"  # JAN-2507
 
 
 # ----------------------------------------
@@ -16,10 +16,11 @@ def get_invoice_prefix(date):
 def get_next_invoice_number(user, date):
     base = get_invoice_prefix(date)
 
-    last_invoice = Invoice.objects.filter(
-        user=user,
-        invoice_number__startswith=base
-    ).order_by("-invoice_number").first()
+    last_invoice = (
+        Invoice.objects.filter(user=user, invoice_number__startswith=base)
+        .order_by("-invoice_number")
+        .first()
+    )
 
     if last_invoice:
         last4 = int(last_invoice.invoice_number[-4:])
@@ -37,8 +38,7 @@ def get_missing_invoice_numbers(user, date):
     base = get_invoice_prefix(date)
 
     invoices = Invoice.objects.filter(
-        user=user,
-        invoice_number__startswith=base
+        user=user, invoice_number__startswith=base
     ).values_list("invoice_number", flat=True)
 
     used = sorted([int(x[-4:]) for x in invoices])
@@ -61,14 +61,12 @@ def validate_user_invoice_number(user, date, invoice_number):
 
     # 1. Check prefix matches date
     if not invoice_number.startswith(base):
-        raise ValueError(
-            f"Invoice number must start with prefix '{base}'."
-        )
+        raise ValueError(f"Invoice number must start with prefix '{base}'.")
 
     # 2. Check last 4 digits are numeric
     try:
-        seq = int(invoice_number[-4:])
-    except:
+        int(invoice_number[-4:])
+    except ValueError:
         raise ValueError("Invalid invoice number format. Must end with 4 digits.")
 
     # 3. Check if number already used by this user

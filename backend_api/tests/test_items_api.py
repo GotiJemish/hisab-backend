@@ -10,18 +10,21 @@ User = get_user_model()
 
 
 class ItemsAPITestCase(APITestCase):
-
     def setUp(self):
         # Users
         self.user = User.objects.create_user(email="user1@example.com", password="1234")
-        self.other_user = User.objects.create_user(email="user2@example.com", password="1234")
+        self.other_user = User.objects.create_user(
+            email="user2@example.com", password="1234"
+        )
 
         self.client.force_authenticate(user=self.user)
 
         # Items
         self.item1 = Items.objects.create(user=self.user, name="Item 1", rate=100)
         self.item2 = Items.objects.create(user=self.user, name="Item 2", rate=200)
-        self.item_other = Items.objects.create(user=self.other_user, name="Other Item", rate=300)
+        self.item_other = Items.objects.create(
+            user=self.other_user, name="Other Item", rate=300
+        )
 
         # URL helpers (must match router basename='items')
         self.url_list = reverse("items-list")
@@ -77,14 +80,18 @@ class ItemsAPITestCase(APITestCase):
     # -----------------------------
     def test_update_item(self):
         payload = {"name": "Updated Item 1", "rate": 999}
-        response = self.client.put(self.url_detail(self.item1.id), payload, format="json")
+        response = self.client.put(
+            self.url_detail(self.item1.id), payload, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"]["name"], "Updated Item 1")
         self.assertEqual(float(response.data["data"]["rate"]), 999)
 
     def test_partial_update_item(self):
         payload = {"rate": 555}
-        response = self.client.patch(self.url_detail(self.item1.id), payload, format="json")
+        response = self.client.patch(
+            self.url_detail(self.item1.id), payload, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(float(response.data["data"]["rate"]), 555)
 

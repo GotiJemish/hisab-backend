@@ -14,8 +14,8 @@ User = get_user_model()
 # 1) API TEST CASES (DRF style tests)
 # ======================================================================
 
-class InvoiceAPITestCase(APITestCase):
 
+class InvoiceAPITestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(email="u1@example.com", password="1234")
         self.other = User.objects.create_user(email="u2@example.com", password="1234")
@@ -31,7 +31,7 @@ class InvoiceAPITestCase(APITestCase):
             user=self.user,
             contact=self.contact,
             invoice_type="default",
-            supply_type="regular"
+            supply_type="regular",
         )
 
         self.url_list = reverse("invoice-list")
@@ -43,9 +43,7 @@ class InvoiceAPITestCase(APITestCase):
             "contact": self.contact.id,
             "invoice_type": "default",
             "supply_type": "regular",
-            "items": [
-                {"description": "A", "quantity": 2, "rate": 100, "discount": 10}
-            ]
+            "items": [{"description": "A", "quantity": 2, "rate": 100, "discount": 10}],
         }
 
         response = self.client.post(self.url_list, payload, format="json")
@@ -60,7 +58,9 @@ class InvoiceAPITestCase(APITestCase):
     # -----------------------------
     def test_invoice_list_only_user_data(self):
         contact2 = Contact.objects.create(user=self.other, name="X")
-        Invoice.objects.create(user=self.other, contact=contact2, invoice_type="default")
+        Invoice.objects.create(
+            user=self.other, contact=contact2, invoice_type="default"
+        )
 
         response = self.client.get(self.url_list)
         self.assertEqual(response.status_code, 200)
@@ -75,7 +75,9 @@ class InvoiceAPITestCase(APITestCase):
             ]
         }
 
-        response = self.client.patch(self.url_detail(self.invoice.id), payload, format="json")
+        response = self.client.patch(
+            self.url_detail(self.invoice.id), payload, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(float(response.data["data"]["total_amount"]), 500)
 
@@ -87,7 +89,9 @@ class InvoiceAPITestCase(APITestCase):
 
     # -----------------------------
     def test_invoice_search_api(self):
-        Invoice.objects.create(user=self.user, contact=self.contact, invoice_type="default")
+        Invoice.objects.create(
+            user=self.user, contact=self.contact, invoice_type="default"
+        )
         response = self.client.get(f"{self.url_list}?search=john")
 
         self.assertEqual(response.status_code, 200)
@@ -104,8 +108,13 @@ class InvoiceAPITestCase(APITestCase):
             "supply_type": "regular",
             "items": [
                 {"description": "Bad Item", "quantity": -2, "rate": 100, "discount": 0},
-                {"description": "Over Discount", "quantity": 1, "rate": 50, "discount": 100}
-            ]
+                {
+                    "description": "Over Discount",
+                    "quantity": 1,
+                    "rate": 50,
+                    "discount": 100,
+                },
+            ],
         }
 
         response = self.client.post(self.url_list, payload, format="json")
@@ -117,7 +126,7 @@ class InvoiceAPITestCase(APITestCase):
             "contact": self.contact.id,
             "invoice_type": "default",
             "supply_type": "regular",
-            "items": []
+            "items": [],
         }
 
         response = self.client.post(self.url_list, payload, format="json")
@@ -136,11 +145,11 @@ class InvoiceAPITestCase(APITestCase):
         self.assertEqual(float(self.invoice.total_amount), 100)
 
         payload = {
-            "items": [
-                {"description": "Y", "quantity": 3, "rate": 50, "discount": 0}
-            ]
+            "items": [{"description": "Y", "quantity": 3, "rate": 50, "discount": 0}]
         }
-        response = self.client.patch(self.url_detail(self.invoice.id), payload, format="json")
+        response = self.client.patch(
+            self.url_detail(self.invoice.id), payload, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(float(response.data["data"]["total_amount"]), 150)
 
@@ -153,14 +162,23 @@ class InvoiceAPITestCase(APITestCase):
         self.assertEqual(len(response.data["data"]), 1)
 
     def test_invoice_filter_by_supply_type(self):
-        Invoice.objects.create(user=self.user, contact=self.contact, invoice_type="default", supply_type="bill_to_ship_to")
+        Invoice.objects.create(
+            user=self.user,
+            contact=self.contact,
+            invoice_type="default",
+            supply_type="bill_to_ship_to",
+        )
         response = self.client.get(f"{self.url_list}?supply_type=bill_to_ship_to")
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(all(i["supply_type"] == "bill_to_ship_to" for i in response.data["data"]))
+        self.assertTrue(
+            all(i["supply_type"] == "bill_to_ship_to" for i in response.data["data"])
+        )
 
     def test_invoice_partial_update_type(self):
         payload = {"invoice_type": "delivery_challan"}
-        response = self.client.patch(self.url_detail(self.invoice.id), payload, format="json")
+        response = self.client.patch(
+            self.url_detail(self.invoice.id), payload, format="json"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"]["invoice_type"], "delivery_challan")
 
@@ -170,8 +188,12 @@ class InvoiceAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_multiple_invoice_number_increment(self):
-        invoice1 = Invoice.objects.create(user=self.user, contact=self.contact, invoice_type="default")
-        invoice2 = Invoice.objects.create(user=self.user, contact=self.contact, invoice_type="default")
+        invoice1 = Invoice.objects.create(
+            user=self.user, contact=self.contact, invoice_type="default"
+        )
+        invoice2 = Invoice.objects.create(
+            user=self.user, contact=self.contact, invoice_type="default"
+        )
 
         self.assertNotEqual(invoice1.bill_id, invoice2.bill_id)
         self.assertNotEqual(invoice1.invoice_number, invoice2.invoice_number)
@@ -181,8 +203,8 @@ class InvoiceAPITestCase(APITestCase):
 # 2) MODEL TESTS
 # ======================================================================
 
-class InvoiceModelTestCase(APITestCase):
 
+class InvoiceModelTestCase(APITestCase):
     def setUp(self):
         self.user = User.objects.create(email="test@example.com")
         self.contact = Contact.objects.create(user=self.user, name="John")
@@ -195,7 +217,10 @@ class InvoiceModelTestCase(APITestCase):
 
     def test_invoice_auto_generates_ids(self):
         invoice = Invoice.objects.create(
-            user=self.user, contact=self.contact, invoice_type="default", supply_type="regular"
+            user=self.user,
+            contact=self.contact,
+            invoice_type="default",
+            supply_type="regular",
         )
         self.assertTrue(invoice.bill_id.startswith("INV"))
         self.assertIsNotNone(invoice.invoice_number)
@@ -210,15 +235,15 @@ class InvoiceModelTestCase(APITestCase):
         invoice.items.add(item1, item2)
         invoice.update_total()
 
-        self.assertEqual(float(invoice.total_amount), (2*100) + (3*200))
+        self.assertEqual(float(invoice.total_amount), (2 * 100) + (3 * 200))
 
 
 # ======================================================================
 # 3) SERIALIZER VALIDATION TESTS
 # ======================================================================
 
-class InvoiceSerializerValidationTest(APITestCase):
 
+class InvoiceSerializerValidationTest(APITestCase):
     def setUp(self):
         self.user = User.objects.create(email="u@example.com")
         self.contact = Contact.objects.create(user=self.user, name="John")
@@ -229,11 +254,11 @@ class InvoiceSerializerValidationTest(APITestCase):
         ser = InvoiceSerializer(
             data={
                 "contact": self.contact.id,
-                "invoice_type": "xyz",   # Invalid
+                "invoice_type": "xyz",  # Invalid
                 "supply_type": "regular",
-                "items": []
+                "items": [],
             },
-            context={"request": type("req", (), {"user": self.user})}
+            context={"request": type("req", (), {"user": self.user})},
         )
 
         self.assertFalse(ser.is_valid())
@@ -244,11 +269,13 @@ class InvoiceSerializerValidationTest(APITestCase):
 # 4) PYTEST TESTS (ordering, filtering, pagination, bill-id, invoice-number)
 # ======================================================================
 
-class TestInvoiceAdvanced:
 
+class TestInvoiceAdvanced:
     def setup_user(self):
         user = User.objects.create_user(email="test@example.com", password="pass1234")
-        contact = Contact.objects.create(user=user, name="Test Contact", mobile="1234567890")
+        contact = Contact.objects.create(
+            user=user, name="Test Contact", mobile="1234567890"
+        )
         return user, contact
 
     def auth_client(self, setup_user):
@@ -262,8 +289,12 @@ class TestInvoiceAdvanced:
         user, contact = setup_user
         url = reverse("invoice-list")
 
-        Invoice.objects.create(user=user, contact=contact, invoice_type="default", total_amount=100)
-        Invoice.objects.create(user=user, contact=contact, invoice_type="default", total_amount=500)
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default", total_amount=100
+        )
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default", total_amount=500
+        )
 
         res = auth_client.get(url + "?ordering=total_amount")
         amounts = [float(i["total_amount"]) for i in res.data["data"]]
@@ -279,7 +310,9 @@ class TestInvoiceAdvanced:
         url = reverse("invoice-list")
 
         Invoice.objects.create(user=user, contact=contact, invoice_type="default")
-        Invoice.objects.create(user=user, contact=contact, invoice_type="delivery_challan")
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="delivery_challan"
+        )
 
         res = auth_client.get(url + "?invoice_type=default")
         assert all(i["invoice_type"] == "default" for i in res.data["data"])
@@ -291,8 +324,12 @@ class TestInvoiceAdvanced:
         d1 = timezone.now().date().replace(day=1)
         d2 = timezone.now().date()
 
-        Invoice.objects.create(user=user, contact=contact, invoice_type="default", invoice_date=d1)
-        Invoice.objects.create(user=user, contact=contact, invoice_type="default", invoice_date=d2)
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default", invoice_date=d1
+        )
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default", invoice_date=d2
+        )
 
         res = auth_client.get(url + f"?invoice_date__gte={d1}&invoice_date__lte={d2}")
         assert len(res.data["data"]) == 2
@@ -304,8 +341,12 @@ class TestInvoiceAdvanced:
         user, contact = setup_user
         url = reverse("invoice-list")
 
-        Invoice.objects.create(user=user, contact=contact, invoice_type="default", total_amount=100)
-        Invoice.objects.create(user=user, contact=contact, invoice_type="default", total_amount=900)
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default", total_amount=100
+        )
+        Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default", total_amount=900
+        )
 
         res = auth_client.get(url + "?total_amount__gte=200&total_amount__lte=1000")
         amounts = [float(i["total_amount"]) for i in res.data["data"]]
@@ -338,7 +379,9 @@ class TestInvoiceAdvanced:
     # BILL-ID ----------------------------------------------------------
     def test_bill_id_format(self, auth_client, setup_user):
         user, contact = setup_user
-        invoice = Invoice.objects.create(user=user, contact=contact, invoice_type="default")
+        invoice = Invoice.objects.create(
+            user=user, contact=contact, invoice_type="default"
+        )
 
         today = timezone.now().date().strftime("%d%m%y")
         assert invoice.bill_id.startswith(f"INV{today}-")

@@ -1,0 +1,18 @@
+Creating test database for alias 'default'...
+F
+======================================================================
+FAIL: test_invoice_create_api (backend_api.tests.test_contacts_api.InvoiceAPITestCase.test_invoice_create_api)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\HISAAB\hisab-backend\backend_api\tests\test_contacts_api.py", line 52, in test_invoice_create_api
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 500 != 201
+
+----------------------------------------------------------------------
+Ran 1 test in 0.694s
+
+FAILED (failures=1)
+Destroying test database for alias 'default'...
+Found 1 test(s).
+System check identified no issues (0 silenced).

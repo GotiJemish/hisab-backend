@@ -5,6 +5,7 @@ from backend_api.models import Items
 
 from rest_framework.permissions import IsAuthenticated
 
+from backend_api.utils.permissions import HasCompanyModulePermission
 from backend_api.serializers import ItemSerializer
 from backend_api.utils.response_utils import success_response, error_response
 
@@ -18,7 +19,8 @@ class ItemsViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = ItemSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasCompanyModulePermission]
+    permission_module_name = "items"
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["name", "type", "unit_type", "tax_category"]
@@ -28,8 +30,11 @@ class ItemsViewSet(viewsets.ModelViewSet):
     # QUERYSET RESTRICTION
     # -----------------------------
     def get_queryset(self):
-        """Return only items belonging to the logged-in user."""
-        return Items.objects.filter(user=self.request.user).order_by("-created_at")
+        """Return items belonging to the user's company or just the user if no company."""
+        user = self.request.user
+        if user.company:
+            return Items.objects.filter(user__company=user.company).order_by("-created_at")
+        return Items.objects.filter(user=user).order_by("-created_at")
 
     # -----------------------------
     # CREATE
@@ -39,7 +44,9 @@ class ItemsViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid():
             serializer.save()
-            return success_response("Item created successfully.", serializer.data, status.HTTP_201_CREATED)
+            return success_response(
+                "Item created successfully.", serializer.data, status.HTTP_201_CREATED
+            )
 
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
@@ -47,8 +54,8 @@ class ItemsViewSet(viewsets.ModelViewSet):
     # LIST
     # -----------------------------
     def list(self, request, *args, **kwargs):
-        items = self.get_queryset()
-        serializer = self.get_serializer(items, many=True)
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
         return success_response("Items fetched successfully.", serializer.data)
 
     # -----------------------------
@@ -84,4 +91,6 @@ class ItemsViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return success_response("Item deleted successfully.", {}, status.HTTP_204_NO_CONTENT)
+        return success_response(
+            "Item deleted successfully.", {}, status.HTTP_204_NO_CONTENT
+        )

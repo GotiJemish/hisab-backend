@@ -7,21 +7,23 @@ import re
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
-        fields = '__all__'
-        read_only_fields = ('id', 'user', 'created_at', 'updated_at')
+        fields = "__all__"
+        read_only_fields = ("id", "user", "created_at", "updated_at")
 
         # -----------------------------
         # VALIDATIONS
         # -----------------------------
 
     def validate_mobile(self, value):
-        if not re.match(r'^\+?\d+$', value):
-            raise serializers.ValidationError("Mobile number must contain only digits or start with '+'.")
+        if not re.match(r"^\+?\d+$", value):
+            raise serializers.ValidationError(
+                "Mobile number must contain only digits or start with '+'."
+            )
         return value
 
     def validate_pan(self, value):
         """PAN format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)"""
-        if value and not re.match(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$', value):
+        if value and not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", value):
             raise serializers.ValidationError(
                 "Invalid PAN format. It should be 5 letters, 4 digits, and 1 letter (e.g., ABCDE1234F)."
             )
@@ -29,8 +31,10 @@ class ContactSerializer(serializers.ModelSerializer):
 
     def validate_gst(self, value):
         """GST format: 15 characters (alphanumeric)"""
-        if value and not re.match(r'^[0-9A-Z]{15}$', value):
-            raise serializers.ValidationError("Invalid GST format. It should be 15 alphanumeric characters.")
+        if value and not re.match(r"^[0-9A-Z]{15}$", value):
+            raise serializers.ValidationError(
+                "Invalid GST format. It should be 15 alphanumeric characters."
+            )
         return value
 
     # -----------------------------
@@ -47,7 +51,6 @@ class ContactSerializer(serializers.ModelSerializer):
             attrs["shipping_country"] = attrs.get("billing_country")
 
         return attrs
-
 
     # def create(self, validated_data):
     #     # Automatically assign logged-in user

@@ -9,13 +9,13 @@ from django.core import mail
 class AuthAPITestCase(APITestCase):
     def setUp(self):
         """Common setup for all test cases"""
-        self.register_url = reverse('register')
-        self.verify_register_otp_url = reverse('verify-register-otp')
-        self.set_password_url = reverse('set-password')
-        self.login_url = reverse('login')
-        self.forgot_password_url = reverse('forgot-password')
-        self.verify_forgot_otp_url = reverse('verify-forgot-otp')
-        self.reset_password_url = reverse('reset-password')
+        self.register_url = reverse("register")
+        self.verify_register_otp_url = reverse("verify-register-otp")
+        self.set_password_url = reverse("set-password")
+        self.login_url = reverse("login")
+        self.forgot_password_url = reverse("forgot-password")
+        self.verify_forgot_otp_url = reverse("verify-forgot-otp")
+        self.reset_password_url = reverse("reset-password")
 
         self.email = "test@example.com"
         self.password = "testpass123"
@@ -25,11 +25,7 @@ class AuthAPITestCase(APITestCase):
     # -------------------------------
     def test_register_user_success(self):
         """User registration should create an inactive user and send OTP"""
-        data = {
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": self.email
-        }
+        data = {"first_name": "John", "last_name": "Doe", "email": self.email}
         response = self.client.post(self.register_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(User.objects.filter(email=self.email).exists())
@@ -38,7 +34,7 @@ class AuthAPITestCase(APITestCase):
 
     def test_register_existing_verified_user(self):
         """Registering with verified email should fail"""
-        user = User.objects.create(email=self.email, is_active=True, is_verified=True)
+        User.objects.create(email=self.email, is_active=True, is_verified=True)
         data = {"first_name": "A", "last_name": "B", "email": self.email}
         response = self.client.post(self.register_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -49,7 +45,7 @@ class AuthAPITestCase(APITestCase):
     def test_verify_register_otp_success(self):
         """Should verify OTP and activate user"""
         user = User.objects.create(email=self.email, is_active=False)
-        otp_entry = EmailOTP.objects.create(user=user, otp="123456", purpose="register")
+        EmailOTP.objects.create(user=user, otp="123456", purpose="register")
 
         data = {"email": self.email, "otp": "123456"}
         response = self.client.post(self.verify_register_otp_url, data)
@@ -58,7 +54,9 @@ class AuthAPITestCase(APITestCase):
         user.refresh_from_db()
         self.assertTrue(user.is_verified)
         self.assertTrue(user.is_active)
-        self.assertFalse(EmailOTP.objects.filter(user=user, purpose="register").exists())
+        self.assertFalse(
+            EmailOTP.objects.filter(user=user, purpose="register").exists()
+        )
 
     def test_verify_register_otp_invalid(self):
         """Invalid OTP should fail"""
@@ -84,7 +82,7 @@ class AuthAPITestCase(APITestCase):
 
     def test_set_password_unverified_user(self):
         """Should fail if user not verified"""
-        user = User.objects.create(email=self.email, is_verified=False)
+        User.objects.create(email=self.email, is_verified=False)
         data = {"email": self.email, "password": self.password}
         response = self.client.post(self.set_password_url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -169,7 +167,9 @@ class AuthAPITestCase(APITestCase):
     def test_reset_password_success(self):
         """Should reset password if OTP verified"""
         user = User.objects.create(email=self.email)
-        EmailOTP.objects.create(user=user, otp="111111", purpose="forgot", is_verified=True)
+        EmailOTP.objects.create(
+            user=user, otp="111111", purpose="forgot", is_verified=True
+        )
 
         data = {"email": self.email, "new_password": self.password}
         response = self.client.post(self.reset_password_url, data)
@@ -181,7 +181,9 @@ class AuthAPITestCase(APITestCase):
     def test_reset_password_without_verified_otp(self):
         """Should fail if OTP not verified"""
         user = User.objects.create(email=self.email)
-        EmailOTP.objects.create(user=user, otp="111111", purpose="forgot", is_verified=False)
+        EmailOTP.objects.create(
+            user=user, otp="111111", purpose="forgot", is_verified=False
+        )
 
         data = {"email": self.email, "new_password": self.password}
         response = self.client.post(self.reset_password_url, data)

@@ -1,43 +1,45 @@
-from uuid import uuid4
-
 from django.db import models
 from django.utils import timezone
 from .user import User
 from .contacts import Contact
 from .invoice_item import InvoiceItem
-from django.utils.crypto import get_random_string
+
 
 class Invoice(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="invoices")
     # Party
-    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name="invoice_contact")
+    contact = models.ForeignKey(
+        Contact, on_delete=models.CASCADE, related_name="invoice_contact"
+    )
     # Invoice Settings
     invoice_type = models.CharField(
         max_length=20,
         choices=[
-            ('default', 'Default'),
-            ('delivery_challan', 'Delivery Challan'),
-            ('old_dc', 'OLD DC')
+            ("default", "Default"),
+            ("delivery_challan", "Delivery Challan"),
+            ("old_dc", "OLD DC"),
         ],
-        default='default'  # ✅ Add default so old rows get a valid value
+        default="default",  # ✅ Add default so old rows get a valid value
     )
     supply_type = models.CharField(
         max_length=30,
         default="regular",
         choices=[
-            ('regular', 'Regular'),
-            ('bill_to_ship_to', 'Bill To - Ship To'),
-            ('bill_from_dispatch_from', 'Bill From - Dispatch From'),
-            ('a_party', '4 Party Transaction'),
-        ]
+            ("regular", "Regular"),
+            ("bill_to_ship_to", "Bill To - Ship To"),
+            ("bill_from_dispatch_from", "Bill From - Dispatch From"),
+            ("a_party", "4 Party Transaction"),
+        ],
     )
     bill_id = models.CharField(max_length=30, unique=True, blank=True)
-    invoice_number = models.CharField(max_length=30, unique=True, blank=True)
+    invoice_number = models.CharField(max_length=30, blank=True)
 
     invoice_date = models.DateField(default=timezone.now)
 
     # ✔ Multi-items in one invoice
-    items = models.ManyToManyField(InvoiceItem, related_name="invoice_items", blank=True)
+    items = models.ManyToManyField(
+        InvoiceItem, related_name="invoice_items", blank=True
+    )
 
     # Amount Summary
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -47,14 +49,17 @@ class Invoice(models.Model):
     notes = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def generate_bill_id(self):
         today = timezone.now().date().strftime("%d%m%y")
         prefix = f"INV{today}"
 
-        last_invoice = Invoice.objects.filter(
-            bill_id__startswith=prefix
-        ).order_by("-bill_id").first()
+        last_invoice = (
+            Invoice.objects.filter(bill_id__startswith=prefix)
+            .order_by("-bill_id")
+            .first()
+        )
 
         if last_invoice:
             last_number = int(last_invoice.bill_id.split("-")[-1])
@@ -71,9 +76,11 @@ class Invoice(models.Model):
 
         base = f"{prefix}-{yydd}"
 
-        last_invoice = Invoice.objects.filter(
-            invoice_number__startswith=base
-        ).order_by("-invoice_number").first()
+        last_invoice = (
+            Invoice.objects.filter(invoice_number__startswith=base)
+            .order_by("-invoice_number")
+            .first()
+        )
 
         if last_invoice:
             last4 = int(last_invoice.invoice_number[-4:])
@@ -82,7 +89,6 @@ class Invoice(models.Model):
             new_last4 = 1
 
         return f"{base}{new_last4:04d}"
-
 
     def save(self, *args, **kwargs):
         if not self.bill_id:

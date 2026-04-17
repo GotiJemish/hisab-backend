@@ -1,5 +1,6 @@
 from rest_framework import viewsets, status, filters
 from backend_api.models import Contact
+from backend_api.utils.permissions import HasCompanyModulePermission
 from backend_api.serializers import ContactSerializer
 from rest_framework.permissions import IsAuthenticated
 from backend_api.utils.response_utils import success_response, error_response
@@ -12,11 +13,20 @@ class ContactViewSet(viewsets.ModelViewSet):
     - Automatically filters contacts by the logged-in user.
     - Provides search and ordering functionality.
     """
+
     serializer_class = ContactSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasCompanyModulePermission]
+    permission_module_name = "contacts"
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'mobile', 'email', 'billing_city', 'billing_state','billing_country']
-    ordering_fields = ['created_at', 'name']
+    search_fields = [
+        "name",
+        "mobile",
+        "email",
+        "billing_city",
+        "billing_state",
+        "billing_country",
+    ]
+    ordering_fields = ["created_at", "name"]
 
     # def filter_queryset(self, queryset):
     #     search_query = self.request.query_params.get('search')
@@ -30,8 +40,11 @@ class ContactViewSet(viewsets.ModelViewSet):
     #     return queryset
 
     def get_queryset(self):
-        """Return only contacts belonging to the logged-in user."""
-        return Contact.objects.filter(user=self.request.user).order_by('-created_at')
+        """Return contacts belonging to the user's company or just the user if no company."""
+        user = self.request.user
+        if user.company:
+            return Contact.objects.filter(user__company=user.company).order_by("-created_at")
+        return Contact.objects.filter(user=user).order_by("-created_at")
 
     def perform_create(self, serializer):
         """Assign user automatically when creating."""
@@ -41,7 +54,7 @@ class ContactViewSet(viewsets.ModelViewSet):
     # GET /contacts/
     # -------------------------------
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return success_response("Contacts fetched successfully.", serializer.data)
 
@@ -60,7 +73,11 @@ class ContactViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             self.perform_create(serializer)
-            return success_response("Contact created successfully.", serializer.data, status.HTTP_201_CREATED)
+            return success_response(
+                "Contact created successfully.",
+                serializer.data,
+                status.HTTP_201_CREATED,
+            )
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     # -------------------------------
@@ -68,7 +85,7 @@ class ContactViewSet(viewsets.ModelViewSet):
     # PATCH /contacts/<id>/
     # -------------------------------
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
 
@@ -78,7 +95,7 @@ class ContactViewSet(viewsets.ModelViewSet):
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, *args, **kwargs):
-        kwargs['partial'] = True
+        kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
 
     # -------------------------------
@@ -87,4 +104,6 @@ class ContactViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return success_response("Contact deleted successfully.", {}, status.HTTP_204_NO_CONTENT)
+        return success_response(
+            "Contact deleted successfully.", {}, status.HTTP_204_NO_CONTENT
+        )

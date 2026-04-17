@@ -5,13 +5,12 @@ from .user import User
 
 
 class Items(models.Model):
-
     # ---------- 🔗 Relationship ----------
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='items',
-        help_text="The user who owns this item."
+        related_name="items",
+        help_text="The user who owns this item.",
     )
 
     # ---------- 🏷️ Basic Details ----------
@@ -22,11 +21,7 @@ class Items(models.Model):
         ("product", "Product"),
         ("charge", "Charge"),
     ]
-    type = models.CharField(
-        max_length=20,
-        choices=ITEM_TYPE_CHOICES,
-        default="service"
-    )
+    type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES, default="service")
 
     sac = models.DecimalField(max_digits=12, decimal_places=0, default=0)
 
@@ -53,9 +48,7 @@ class Items(models.Model):
     ]
 
     unit_type = models.CharField(
-        max_length=20,
-        choices=ITEM_MEASURE_CHOICES,
-        default="Pcs"
+        max_length=20, choices=ITEM_MEASURE_CHOICES, default="Pcs"
     )
 
     # ---------- 🧾 Tax Category ----------
@@ -74,9 +67,7 @@ class Items(models.Model):
     ]
 
     tax_category = models.CharField(
-        max_length=20,
-        choices=TAX_CATEGORY_CHOICES,
-        default="none"
+        max_length=20, choices=TAX_CATEGORY_CHOICES, default="none"
     )
 
     invoice_description = models.TextField(blank=True)
@@ -90,10 +81,10 @@ class Items(models.Model):
 
     # ---------- ⚙️ Meta ----------
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         verbose_name = "Item"
         verbose_name_plural = "Items"
-        unique_together = ('user', 'name')  # prevent duplicate names for same user
+        unique_together = ("user", "name")  # prevent duplicate names for same user
 
     # ---------- 📌 String Representation ----------
     def __str__(self):
