@@ -38,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -54,7 +54,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='COMPANY_ADMIN')
     
-    # Store dynamic permissions like {"invoices": ["create", "read"], "items": ["read"]}
+    custom_role = models.ForeignKey(
+        'backend_api.Role', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_users'
+    )
+
+    # Store dynamic permissions like {"invoices": {"create": True, "read": True}}
     permissions = models.JSONField(default=dict, blank=True)
 
     groups = models.ManyToManyField(
@@ -76,6 +80,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
     objects = UserManager()
+
+    class Meta:
+        unique_together = ('email', 'company')
 
     def __str__(self):
         return self.email

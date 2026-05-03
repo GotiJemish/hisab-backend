@@ -2,6 +2,7 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from django.core.mail import send_mail
+from django.conf import settings
 from backend_api.models import User, EmailOTP
 import random
 from django.utils import timezone
@@ -18,13 +19,12 @@ class RegisterSerializer(serializers.Serializer):
     company_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     def validate_email(self, value):
-        try:
-            user = User.objects.get(email=value)
-            if user.is_verified:
-                raise serializers.ValidationError("This email is already registered and verified. Please log in instead.")
-            return value
-        except User.DoesNotExist:
-            return value
+        user = User.objects.filter(email=value).first()
+        if user and user.is_verified:
+            # Note: We are allowing multiple users, but for top-level org registration, we might just warn
+            # However we should allow it if multi-tenancy uniqueness is removed.
+            pass
+        return value
 
     def create(self, validated_data):
         email = validated_data["email"]
@@ -64,7 +64,7 @@ class RegisterSerializer(serializers.Serializer):
         send_mail(
             subject="Your Registration OTP Code",
             message=f"Your OTP for registration is: {otp}",
-            from_email="noreply@example.com",
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
             fail_silently=False,
         )
@@ -84,9 +84,8 @@ class VerifyRegisterOTPSerializer(serializers.Serializer):
     def validate(self, data):
         email, otp = data["email"], data["otp"]
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(email=email).order_by('-date_joined').first()
+        if not user:
             raise serializers.ValidationError(
                 {"success": False, "message": "User not found."}
             )
@@ -141,9 +140,8 @@ class SetPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
 
     def validate(self, data):
-        try:
-            user = User.objects.get(email=data["email"])
-        except User.DoesNotExist:
+        user = User.objects.filter(email=data["email"]).order_by('-date_joined').first()
+        if not user:
             raise serializers.ValidationError("User not found.")
 
         if not user.is_verified:
@@ -216,9 +214,8 @@ class ResendOTPSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         email, purpose = validated_data["email"], validated_data["purpose"]
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        user = User.objects.filter(email=email).order_by('-date_joined').first()
+        if not user:
             raise serializers.ValidationError("User not found.")
 
         # Delete old OTPs
@@ -230,7 +227,7 @@ class ResendOTPSerializer(serializers.Serializer):
         send_mail(
             subject="Your OTP Code",
             message=f"Your OTP for {purpose} is: {otp}",
-            from_email="noreply@example.com",
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
             fail_silently=False,
         )

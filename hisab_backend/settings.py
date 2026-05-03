@@ -133,6 +133,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 AUTH_USER_MODEL = "backend_api.User"
 
+AUTHENTICATION_BACKENDS = [
+    "backend_api.auth_backends.EmailMultiTenantBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 
 assert os.getenv("EMAIL_ACCOUNT"), "EMAIL_ACCOUNT not set in .env"
 assert os.getenv("EMAIL_PASSWORD"), "EMAIL_PASSWORD not set in .env"

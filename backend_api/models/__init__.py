@@ -5,3 +5,5 @@ from .invoice import *
 from .items import *
 from .company import *
 from .invoice_item import *
+from .role import *
+from .tax import *

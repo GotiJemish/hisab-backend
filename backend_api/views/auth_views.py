@@ -84,9 +84,9 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return success_response("OTP sent to your email for password reset.")
-        return error_response("No account found with this email.")
+            result = serializer.save()
+            return success_response(result.get("message", "Request successful."))
+        return error_response(serializer.errors.get("non_field_errors", ["No account found with this email."])[0])
 
 
 class VerifyForgotOTPView(APIView):

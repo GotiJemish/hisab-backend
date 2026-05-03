@@ -7,6 +7,7 @@ from backend_api.serializers.user import UserSerializer, CreateUserSerializer
 from backend_api.utils.response_utils import success_response, error_response
 import random
 from django.core.mail import send_mail
+from django.conf import settings
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -18,10 +19,20 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.company:
-            # Users belonging to the same company
-            return User.objects.filter(company=user.company).order_by("-date_joined")
-        # If no company, they can only see themselves
-        return User.objects.filter(id=user.id)
+            # Users belonging to the same company, excluding the requesting admin themselves
+            return User.objects.filter(company=user.company).exclude(id=user.id).order_by("-date_joined")
+        # If no company, they cannot see any other users to manage
+        return User.objects.none()
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return success_response("Users retrieved successfully.", serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return success_response("User retrieved successfully.", serializer.data)
 
     def create(self, request, *args, **kwargs):
         admin = request.user
@@ -42,13 +53,20 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = CreateUserSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data["email"]
+            custom_role_id = serializer.validated_data.get("custom_role_id")
             temp_password = str(random.randint(10000000, 99999999)) # temporary password
+            
+            custom_role = None
+            if custom_role_id:
+                from backend_api.models.role import Role
+                custom_role = Role.objects.filter(id=custom_role_id, company=admin.company).first()
             
             new_user = User.objects.create(
                 email=email,
                 first_name=serializer.validated_data["first_name"],
                 last_name=serializer.validated_data["last_name"],
                 role=serializer.validated_data["role"],
+                custom_role=custom_role,
                 permissions=serializer.validated_data["permissions"],
                 company=admin.company,
                 is_active=True,
@@ -62,12 +80,13 @@ class UserViewSet(viewsets.ModelViewSet):
                 send_mail(
                     "You've been invited to Hisaab",
                     f"Hello {new_user.first_name},\n\nYou have been invited to join {admin.company.name} on Hisaab.\n\nYour login email: {email}\nYour temporary password: {temp_password}\n\nPlease log in and change your password.",
-                    "noreply@example.com",
+                    settings.DEFAULT_FROM_EMAIL,
                     [email],
                     fail_silently=False,
                 )
             except Exception as e:
-                pass # Fail silently for email in dev
+                print(f"Failed to send email in user creation: {e}") # Fail silently for email in dev
+
 
             return success_response(
                 "User added successfully. An email with temporary password has been sent.",
@@ -84,9 +103,17 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = CreateUserSerializer(data=request.data)
         if serializer.is_valid():
+            custom_role_id = serializer.validated_data.get("custom_role_id")
+            
+            custom_role = None
+            if custom_role_id:
+                from backend_api.models.role import Role
+                custom_role = Role.objects.filter(id=custom_role_id, company=admin.company).first()
+            
             instance.first_name = serializer.validated_data["first_name"]
             instance.last_name = serializer.validated_data["last_name"]
             instance.role = serializer.validated_data["role"]
+            instance.custom_role = custom_role
             instance.permissions = serializer.validated_data["permissions"]
             instance.save()
             return success_response("User updated successfully.", UserSerializer(instance).data)

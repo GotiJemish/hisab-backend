@@ -25,19 +25,37 @@ class ForgotPasswordSerializer(serializers.Serializer):
         user = validated_data["user"]
         email = user.email
 
-        EmailOTP.objects.filter(user=user, purpose="forgot").delete()
-        otp = str(random.randint(100000, 999999))
-        EmailOTP.objects.create(user=user, otp=otp, purpose="forgot")
+        from django.conf import settings
 
-        send_mail(
-            subject="Password Reset OTP",
-            message=f"Your OTP to reset password is: {otp}",
-            from_email="noreply@example.com",
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        if user.role == "STAFF":
+            # For company staff, generate a new password and email it
+            new_password = str(random.randint(10000000, 99999999))
+            user.set_password(new_password)
+            user.save()
+            
+            send_mail(
+                subject="Your New System Password",
+                message=f"Hello {user.first_name},\n\nYour password has been reset. Your new login password is: {new_password}\n\nPlease log in and change your password.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            return {"success": True, "message": "A new password has been sent to your email address."}
+        else:
+            # For company admins / super admins, use OTP flow
+            EmailOTP.objects.filter(user=user, purpose="forgot").delete()
+            otp = str(random.randint(100000, 999999))
+            EmailOTP.objects.create(user=user, otp=otp, purpose="forgot")
 
-        return {"success": True, "message": "OTP sent successfully."}
+            send_mail(
+                subject="Password Reset OTP",
+                message=f"Your OTP to reset password is: {otp}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
+            return {"success": True, "message": "OTP sent successfully to your email for password reset."}
 
 
 class VerifyForgotOTPSerializer(serializers.Serializer):
