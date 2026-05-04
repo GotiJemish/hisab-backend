@@ -20,13 +20,21 @@ class RoleViewSet(viewsets.ModelViewSet):
         return success_response("Roles retrieved successfully.", serializer.data)
 
     def create(self, request, *args, **kwargs):
+        admin = request.user
+        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+            return error_response("You don't have permission to create roles.", status.HTTP_403_FORBIDDEN)
+            
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(company=admin.company)
             return success_response("Role created successfully.", serializer.data, status.HTTP_201_CREATED)
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
+        admin = request.user
+        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+            return error_response("You don't have permission to update roles.", status.HTTP_403_FORBIDDEN)
+            
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
@@ -35,6 +43,11 @@ class RoleViewSet(viewsets.ModelViewSet):
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
+        admin = request.user
+        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+            return error_response("You don't have permission to delete roles.", status.HTTP_403_FORBIDDEN)
+            
         instance = self.get_object()
         instance.delete()
         return success_response("Role deleted successfully.", {}, status.HTTP_204_NO_CONTENT)
+

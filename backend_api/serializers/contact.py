@@ -15,7 +15,7 @@ class ContactSerializer(serializers.ModelSerializer):
         # -----------------------------
 
     def validate_mobile(self, value):
-        if not re.match(r"^\+?\d+$", value):
+        if value and not re.match(r"^\+?\d+$", value):
             raise serializers.ValidationError(
                 "Mobile number must contain only digits or start with '+'."
             )
@@ -41,6 +41,12 @@ class ContactSerializer(serializers.ModelSerializer):
     # AUTO-COPY SHIPPING IF CHECKED
     # -----------------------------
     def validate(self, attrs):
+        mobile = attrs.get("mobile", getattr(self.instance, "mobile", None))
+        email = attrs.get("email", getattr(self.instance, "email", None))
+        
+        if not mobile and not email:
+            raise serializers.ValidationError("Either mobile or email is required.")
+
         same = attrs.get("same_as_billing", None)
 
         if same:

@@ -22,9 +22,11 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
             "quantity",
             "rate",
             "discount",
+            "tax",
+            "tax_amount",
             "total",
         ]
-        read_only_fields = ["total"]
+        read_only_fields = ["total", "tax_amount"]
 
     def validate(self, data):
         """

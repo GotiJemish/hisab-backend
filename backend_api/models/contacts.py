@@ -16,7 +16,7 @@ class Contact(models.Model):
     # 👤 Basic Details
     name = models.CharField(max_length=100)
     mobile = models.CharField(
-        max_length=15, help_text="Include country code if applicable."
+        max_length=15, blank=True, null=True, help_text="Include country code if applicable."
     )
     email = models.EmailField(blank=True, null=True)
 
@@ -81,13 +81,19 @@ class Contact(models.Model):
         ordering = ["-created_at"]
         verbose_name = "Contact"
         verbose_name_plural = "Contacts"
-        unique_together = ("user", "mobile")  # prevent duplicates for the same user
+        # We can't strictly enforce unique_together on user and mobile if mobile can be null,
+        # but django handles nulls in unique_together by allowing multiple nulls depending on DB.
+        unique_together = ("user", "mobile", "email")
 
     # 📘 String Representation
     def __str__(self):
-        return f"{self.name} ({self.mobile})"
+        return f"{self.name} ({self.mobile or self.email})"
 
     def save(self, *args, **kwargs):
+        if not self.mobile and not self.email:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Either mobile or email is required for a contact.")
+
         if self.same_as_billing:
             self.shipping_address = self.billing_address
             self.shipping_city = self.billing_city

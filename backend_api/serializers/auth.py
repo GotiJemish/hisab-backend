@@ -242,6 +242,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token["user_id"] = str(user.id)
         token["email"] = user.email
+        token["role"] = user.role
+        token["permissions"] = user.permissions
         return token
 
     def validate(self, attrs):
@@ -250,6 +252,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             {
                 "user_id": str(self.user.id),
                 "email": self.user.email,
+                "role": self.user.role,
+                "permissions": self.user.permissions,
             }
         )
         return data

@@ -63,8 +63,18 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user)
             refresh["user_id"] = str(user.id)
             refresh["email"] = user.email
+            refresh["role"] = user.role
+            refresh["permissions"] = user.permissions
+            
+            # Ensure access token also gets the custom claims
+            access = refresh.access_token
+            access["user_id"] = str(user.id)
+            access["email"] = user.email
+            access["role"] = user.role
+            access["permissions"] = user.permissions
+            
             data = {
-                "access": str(refresh.access_token),
+                "access": str(access),
                 "refresh": str(refresh),
                 "user_id": str(user.id),
             }
