@@ -44,6 +44,9 @@ class Invoice(models.Model):
     # Amount Summary
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
+    # Challan Numbers
+    party_challan_no = models.CharField(max_length=50, blank=True, default="")
+
     # Notes
     internal_note = models.TextField(blank=True)
     notes = models.TextField(blank=True)

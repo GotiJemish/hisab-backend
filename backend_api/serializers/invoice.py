@@ -23,8 +23,10 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
             "rate",
             "discount",
             "tax",
+            "gst_percentage",
             "tax_amount",
             "total",
+            "delivery_challan_no",
         ]
         read_only_fields = ["total", "tax_amount"]
 
@@ -38,6 +40,10 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
             data.setdefault("description", item.name)
             data.setdefault("rate", item.rate)
 
+        # Default GST to 5% if not provided
+        if "gst_percentage" not in data:
+            data["gst_percentage"] = 5
+
         return data
 
 
@@ -45,6 +51,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     items = InvoiceItemSerializer(many=True)
     available_invoice_numbers = serializers.SerializerMethodField()
     next_invoice_number = serializers.SerializerMethodField()
+    gst_summary = serializers.SerializerMethodField()
 
     # invoice_date_display = serializers.SerializerMethodField()
     class Meta:
@@ -57,12 +64,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "contact",
             "invoice_type",
             "supply_type",
+            "party_challan_no",
             "items",
             "total_amount",
             "internal_note",
             "notes",
             "available_invoice_numbers",
             "next_invoice_number",
+            "gst_summary",
         ]
         read_only_fields = ["bill_id", "total_amount", "user"]
 
@@ -74,9 +83,29 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_next_invoice_number(self, obj):
         return get_next_invoice_number(obj.user, obj.invoice_date)
 
-        # ----------------------------------
-        # PARSE INPUT DATE (DD-MM-YYYY → YYYY-MM-DD)
-        # ----------------------------------
+    def get_gst_summary(self, obj):
+        """Calculate GST summary from all items."""
+        from decimal import Decimal
+        subtotal = Decimal('0')
+        total_gst = Decimal('0')
+
+        for item in obj.items.all():
+            taxable = (item.quantity * item.rate) - item.discount
+            if taxable < 0:
+                taxable = Decimal('0')
+            gst_rate = item.gst_percentage or Decimal('0')
+            gst_amt = (taxable * gst_rate) / Decimal('100')
+            subtotal += taxable
+            total_gst += gst_amt
+
+        return {
+            "subtotal": str(subtotal),
+            "total_gst": str(total_gst),
+            "cgst": str(total_gst / 2),
+            "sgst": str(total_gst / 2),
+            "igst": str(total_gst),
+            "grand_total": str(subtotal + total_gst),
+        }
 
     # --------------------------
     # VALIDATION
