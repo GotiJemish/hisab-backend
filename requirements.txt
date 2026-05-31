@@ -6,4 +6,5 @@ djangorestframework-simplejwt
 django-filter
 dj_database_url
 gunicorn
+whitenoise
 # pip install -r requirements.txt
