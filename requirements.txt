@@ -5,4 +5,5 @@ python-dotenv
 djangorestframework-simplejwt
 django-filter
 dj_database_url
+gunicorn
 # pip install -r requirements.txt
