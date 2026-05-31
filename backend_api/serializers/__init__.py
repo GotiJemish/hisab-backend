@@ -5,3 +5,6 @@ from .forgot_password import *
 from .items import *
 from .invoice import *
 from .user import *
+from .account import *
+from .income import *
+from .expense import *

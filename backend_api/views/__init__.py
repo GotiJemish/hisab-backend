@@ -3,3 +3,4 @@ from .contact_views import *
 from .views import *
 from .items_views import *
 from .invoice_views import *
+from .account_views import *

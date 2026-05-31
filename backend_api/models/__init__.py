@@ -7,3 +7,6 @@ from .company import *
 from .invoice_item import *
 from .role import *
 from .tax import *
+from .account import *
+from .income import *
+from .expense import *
