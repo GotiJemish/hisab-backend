@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
-
+import dj_database_url
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -96,22 +96,32 @@ WSGI_APPLICATION = "hisab_backend.wsgi.application"
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-assert os.getenv("DB_NAME"), "DB_NAME not set in .env"
-assert os.getenv("DB_USER"), "DB_USER not set in .env"
-assert os.getenv("PASSWORD"), "DB_PASSWORD not set in .env"
-assert os.getenv("HOST"), "DB_HOST not set in .env"
-assert os.getenv("PORT"), "DB_PORT not set in .env"
+# assert os.getenv("DB_NAME"), "DB_NAME not set in .env"
+# assert os.getenv("DB_USER"), "DB_USER not set in .env"
+# assert os.getenv("PASSWORD"), "DB_PASSWORD not set in .env"
+# assert os.getenv("HOST"), "DB_HOST not set in .env"
+# assert os.getenv("PORT"), "DB_PORT not set in .env"
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": os.getenv("DB_NAME"),
+#         "USER": os.getenv("DB_USER"),
+#         "PASSWORD": os.getenv("PASSWORD"),
+#         "HOST": os.getenv("HOST"),
+#         "PORT": os.getenv("PORT"),
+#     }
+# }
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("PASSWORD"),
-        "HOST": os.getenv("HOST"),
-        "PORT": os.getenv("PORT"),
-    }
+    "default": dj_database_url.parse(
+        url=os.getenv("DATABASE_URL", ""),
+        conn_max_age=600, conn_health_checks=True
+    )
 }
+
+
+
+
 
 
 # Password validation

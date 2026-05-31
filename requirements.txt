@@ -4,4 +4,5 @@ django-cors-headers
 python-dotenv
 djangorestframework-simplejwt
 django-filter
+dj_database_url
 # pip install -r requirements.txt
