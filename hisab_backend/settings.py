@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 from datetime import timedelta
 import dj_database_url
 
+import ast
+
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,6 +35,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = os.getenv("DEBUG") == "True"
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+cors_origins_raw = os.getenv("CORS_ORIGINS", "")
+try:
+    CORS_ORIGINS = ast.literal_eval(cors_origins_raw)
+    if isinstance(CORS_ORIGINS, str):
+        CORS_ORIGINS = [CORS_ORIGINS]
+    elif not isinstance(CORS_ORIGINS, (list, tuple)):
+        CORS_ORIGINS = []
+except (ValueError, SyntaxError):
+    CORS_ORIGINS = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+
+# Clean up trailing slashes and whitespace from origins
+CORS_ORIGINS = [origin.strip().rstrip("/") for origin in CORS_ORIGINS if isinstance(origin, str) and origin.strip()]
 
 ALLOWED_HOSTS = []
 
@@ -148,6 +163,8 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+SILENCED_SYSTEM_CHECKS = ["auth.W004"]
+
 
 assert os.getenv("EMAIL_ACCOUNT"), "EMAIL_ACCOUNT not set in .env"
 assert os.getenv("EMAIL_PASSWORD"), "EMAIL_PASSWORD not set in .env"
@@ -189,10 +206,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
 }
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = CORS_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "authorization",
