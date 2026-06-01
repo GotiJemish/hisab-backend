@@ -7,6 +7,8 @@ from backend_api.views.user_views import UserViewSet
 from backend_api.views.role_views import RoleViewSet
 from backend_api.views.tax_views import TaxViewSet
 
+from backend_api.views.profile_views import UserProfileView, ChangePasswordView, CompanyProfileView, ProfileImageView
+
 router = DefaultRouter()
 
 # GET	/contacts/	List all contacts of logged-in user
@@ -29,4 +31,8 @@ router.register(r"expenses", ExpenseViewSet, basename="expense")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("profile/", UserProfileView.as_view(), name="user-profile"),
+    path("profile/image/", ProfileImageView.as_view(), name="profile-image"),
+    path("profile/change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("company/", CompanyProfileView.as_view(), name="company-profile"),
 ]

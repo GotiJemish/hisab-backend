@@ -58,6 +58,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         'backend_api.Role', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_users'
     )
 
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+
     # Store dynamic permissions like {"invoices": {"create": True, "read": True}}
     permissions = models.JSONField(default=dict, blank=True)
 

@@ -5,15 +5,28 @@ from backend_api.models import User, Company
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ['id', 'name', 'created_at']
+        fields = ['id', 'name', 'address', 'phone', 'email', 'gstin', 'pan', 'website', 'created_at']
 
 class UserSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     custom_role_name = serializers.CharField(source='custom_role.name', read_only=True)
+    profile_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'role', 'custom_role', 'custom_role_name', 'permissions', 'is_active', 'company']
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'role', 
+            'custom_role', 'custom_role_name', 'permissions', 
+            'is_active', 'company', 'profile_image', 'profile_image_url'
+        ]
+
+    def get_profile_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.profile_image:
+            if request:
+                return request.build_absolute_uri(obj.profile_image.url)
+            return obj.profile_image.url
+        return None
 
 class CreateUserSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)

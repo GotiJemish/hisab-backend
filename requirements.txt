@@ -7,4 +7,5 @@ django-filter
 dj_database_url
 gunicorn
 whitenoise
+Pillow
 # pip install -r requirements.txt

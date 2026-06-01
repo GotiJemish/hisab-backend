@@ -11,25 +11,41 @@ from django.conf import settings
 
 class UserViewSet(viewsets.ModelViewSet):
     """
-    User Management API for Company Admins
+    User Management API for Company Admins and Permitted Staff
     """
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 
+    def has_user_permission(self, user, action):
+        if user.role in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+            return True
+        if user.role == "STAFF":
+            perms = user.permissions or {}
+            if perms.get("all") is True:
+                return True
+            users_perms = perms.get("users", {})
+            if isinstance(users_perms, dict) and users_perms.get(action) is True:
+                return True
+        return False
+
     def get_queryset(self):
         user = self.request.user
         if user.company:
-            # Users belonging to the same company, excluding the requesting admin themselves
+            # Users belonging to the same company, excluding the requesting admin/staff themselves
             return User.objects.filter(company=user.company).exclude(id=user.id).order_by("-date_joined")
         # If no company, they cannot see any other users to manage
         return User.objects.none()
 
     def list(self, request, *args, **kwargs):
+        if not self.has_user_permission(request.user, "read"):
+            return error_response("You don't have permission to view users.", status.HTTP_403_FORBIDDEN)
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return success_response("Users retrieved successfully.", serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
+        if not self.has_user_permission(request.user, "read"):
+            return error_response("You don't have permission to view this user.", status.HTTP_403_FORBIDDEN)
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return success_response("User retrieved successfully.", serializer.data)
@@ -48,9 +64,10 @@ class UserViewSet(viewsets.ModelViewSet):
             admin.role = 'COMPANY_ADMIN'
             admin.save()
 
-        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+        if not admin.company or not self.has_user_permission(admin, "create"):
             return error_response("You don't have permission to add users.", status.HTTP_403_FORBIDDEN)
-        serializer = CreateUserSerializer(data=request.data)
+            
+        serializer = CreateUserSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             email = serializer.validated_data["email"]
             custom_role_id = serializer.validated_data.get("custom_role_id")
@@ -90,18 +107,18 @@ class UserViewSet(viewsets.ModelViewSet):
 
             return success_response(
                 "User added successfully. An email with temporary password has been sent.",
-                UserSerializer(new_user).data,
+                UserSerializer(new_user, context={'request': request}).data,
                 status.HTTP_201_CREATED
             )
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         admin = request.user
-        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+        if not admin.company or not self.has_user_permission(admin, "update"):
             return error_response("You don't have permission to update users.", status.HTTP_403_FORBIDDEN)
         
         instance = self.get_object()
-        serializer = CreateUserSerializer(data=request.data)
+        serializer = CreateUserSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             custom_role_id = serializer.validated_data.get("custom_role_id")
             
@@ -116,12 +133,12 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.custom_role = custom_role
             instance.permissions = serializer.validated_data["permissions"]
             instance.save()
-            return success_response("User updated successfully.", UserSerializer(instance).data)
+            return success_response("User updated successfully.", UserSerializer(instance, context={'request': request}).data)
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
         admin = request.user
-        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
+        if not admin.company or not self.has_user_permission(admin, "delete"):
             return error_response("You don't have permission to delete users.", status.HTTP_403_FORBIDDEN)
             
         instance = self.get_object()
