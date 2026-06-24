@@ -1,5 +1,5 @@
 # backend_api/serializers/auth.py
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 from django.core.mail import send_mail
 from django.conf import settings

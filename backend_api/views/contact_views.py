@@ -28,17 +28,6 @@ class ContactViewSet(viewsets.ModelViewSet):
     ]
     ordering_fields = ["created_at", "name"]
 
-    # def filter_queryset(self, queryset):
-    #     search_query = self.request.query_params.get('search')
-    #     if search_query:
-    #         # Try exact name first
-    #         exact_matches = queryset.filter(name__iexact=search_query)
-    #         if exact_matches.exists():
-    #             return exact_matches
-    #         # Otherwise fallback to DRF's broader search
-    #         queryset = super().filter_queryset(queryset)
-    #     return queryset
-
     def get_queryset(self):
         """Return contacts belonging to the user's company or just the user if no company."""
         user = self.request.user

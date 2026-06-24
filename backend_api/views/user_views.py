@@ -1,7 +1,6 @@
 # backend_api/views/user_views.py
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from backend_api.models import User
 from backend_api.serializers.user import UserSerializer, CreateUserSerializer
 from backend_api.utils.response_utils import success_response, error_response

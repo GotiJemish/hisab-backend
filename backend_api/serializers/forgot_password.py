@@ -94,16 +94,22 @@ class VerifyForgotOTPSerializer(serializers.Serializer):
 
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    new_password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=6, required=False)
+    new_password = serializers.CharField(write_only=True, min_length=6, required=False)
 
     def validate(self, data):
+        password_val = data.get("password") or data.get("new_password")
+        if not password_val:
+            raise serializers.ValidationError("Password field is required.")
+        if len(password_val) < 6:
+            raise serializers.ValidationError("Password must be at least 6 characters.")
+        data["password_val"] = password_val
+
         email = data["email"]
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {"success": False, "message": "User not found."}
-            )
+            raise serializers.ValidationError("User not found.")
 
         otp_verified = EmailOTP.objects.filter(
             user=user,
@@ -113,15 +119,14 @@ class ResetPasswordSerializer(serializers.Serializer):
         ).exists()
 
         if not otp_verified:
-            raise serializers.ValidationError(
-                {"success": False, "message": "OTP not verified or expired."}
-            )
+            raise serializers.ValidationError("OTP not verified or expired.")
         data["user"] = user
         return data
 
     def create(self, validated_data):
         user = validated_data["user"]
-        user.set_password(validated_data["new_password"])
+        password_val = validated_data["password_val"]
+        user.set_password(password_val)
         user.save()
         EmailOTP.objects.filter(user=user, purpose="forgot").delete()
 

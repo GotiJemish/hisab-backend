@@ -57,9 +57,3 @@ class ContactSerializer(serializers.ModelSerializer):
             attrs["shipping_country"] = attrs.get("billing_country")
 
         return attrs
-
-    # def create(self, validated_data):
-    #     # Automatically assign logged-in user
-    #     user = self.context['request'].user
-    #     validated_data['user'] = user
-    #     return super().create(validated_data)

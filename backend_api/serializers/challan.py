@@ -1,20 +1,20 @@
-# backend_api/serializers/invoice.py
+# backend_api/serializers/challan.py
 from rest_framework import serializers
-from backend_api.models import Invoice, InvoiceItem, Items
-from backend_api.utils.invoice_utils import (
-    get_missing_invoice_numbers,
-    get_next_invoice_number,
-    validate_user_invoice_number,
+from backend_api.models import Challan, ChallanItem, Items
+from backend_api.utils.challan_utils import (
+    get_missing_challan_numbers,
+    get_next_challan_number,
+    validate_user_challan_number,
 )
 
 
-class InvoiceItemSerializer(serializers.ModelSerializer):
+class ChallanItemSerializer(serializers.ModelSerializer):
     item_id = serializers.PrimaryKeyRelatedField(
         queryset=Items.objects.all(), required=False, allow_null=True
     )
 
     class Meta:
-        model = InvoiceItem
+        model = ChallanItem
         fields = [
             "id",
             "item_id",
@@ -47,15 +47,14 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         return data
 
 
-class InvoiceSerializer(serializers.ModelSerializer):
-    items = InvoiceItemSerializer(many=True)
+class ChallanSerializer(serializers.ModelSerializer):
+    items = ChallanItemSerializer(many=True)
     available_invoice_numbers = serializers.SerializerMethodField()
     next_invoice_number = serializers.SerializerMethodField()
     gst_summary = serializers.SerializerMethodField()
 
-    # invoice_date_display = serializers.SerializerMethodField()
     class Meta:
-        model = Invoice
+        model = Challan
         fields = [
             "id",
             "bill_id",
@@ -75,13 +74,13 @@ class InvoiceSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["total_amount", "user"]
 
-    # Return skipped/missing invoice numbers for UI dropdown
+    # Return skipped/missing challan numbers for UI dropdown
     def get_available_invoice_numbers(self, obj):
-        return get_missing_invoice_numbers(obj.user, obj.invoice_date)
+        return get_missing_challan_numbers(obj.user, obj.invoice_date)
 
-    # Return automatically generated next invoice number
+    # Return automatically generated next challan number
     def get_next_invoice_number(self, obj):
-        return get_next_invoice_number(obj.user, obj.invoice_date)
+        return get_next_challan_number(obj.user, obj.invoice_date)
 
     def get_gst_summary(self, obj):
         """Calculate GST summary from all items."""
@@ -123,7 +122,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         if invoice_number and invoice_date:
             exclude_id = self.instance.id if self.instance else None
             try:
-                validate_user_invoice_number(user, invoice_date, invoice_number, exclude_id=exclude_id)
+                validate_user_challan_number(user, invoice_date, invoice_number, exclude_id=exclude_id)
             except Exception as e:
                 raise serializers.ValidationError({"invoice_number": str(e)})
 
@@ -135,18 +134,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
         validated_data["user"] = self.context["request"].user
-        user = self.context["request"].user
-        validated_data["user"] = user
-        invoice = Invoice.objects.create(**validated_data)
+        challan = Challan.objects.create(**validated_data)
         # Create items
         for item_data in items_data:
-            item = InvoiceItem(**item_data)
+            item = ChallanItem(**item_data)
             item.save()
-            invoice.items.add(item)
+            challan.items.add(item)
 
-        invoice.update_total()
-        invoice.refresh_from_db()
-        return invoice
+        challan.update_total()
+        challan.refresh_from_db()
+        return challan
 
     # --------------------------
     # UPDATE LOGIC
@@ -162,7 +159,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         if items_data is not None:
             instance.items.clear()
             for item in items_data:
-                item_obj = InvoiceItem.objects.create(**item)
+                item_obj = ChallanItem.objects.create(**item)
                 instance.items.add(item_obj)
 
         instance.update_total()

@@ -1,11 +1,13 @@
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
+from backend_api.utils.permissions import HasCompanyModulePermission
 from backend_api.models.role import Role
 from backend_api.serializers.role import RoleSerializer
 from backend_api.utils.response_utils import success_response, error_response
 
 class RoleViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasCompanyModulePermission]
+    permission_module_name = "roles"
     serializer_class = RoleSerializer
 
     def get_queryset(self):
@@ -21,9 +23,6 @@ class RoleViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         admin = request.user
-        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
-            return error_response("You don't have permission to create roles.", status.HTTP_403_FORBIDDEN)
-            
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(company=admin.company)
@@ -31,10 +30,6 @@ class RoleViewSet(viewsets.ModelViewSet):
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        admin = request.user
-        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
-            return error_response("You don't have permission to update roles.", status.HTTP_403_FORBIDDEN)
-            
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
@@ -43,10 +38,6 @@ class RoleViewSet(viewsets.ModelViewSet):
         return error_response(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
-        admin = request.user
-        if not admin.company or admin.role not in ["COMPANY_ADMIN", "SUPER_ADMIN"]:
-            return error_response("You don't have permission to delete roles.", status.HTTP_403_FORBIDDEN)
-            
         instance = self.get_object()
         instance.delete()
         return success_response("Role deleted successfully.", {}, status.HTTP_204_NO_CONTENT)

@@ -116,4 +116,16 @@ class ResetPasswordView(APIView):
         if serializer.is_valid():
             serializer.save()
             return success_response("Password has been reset successfully.")
-        return error_response("Password reset failed. Invalid data.")
+        
+        errors = serializer.errors
+        if "non_field_errors" in errors:
+            msg = errors["non_field_errors"][0]
+        elif "password" in errors:
+            msg = errors["password"][0]
+        elif "new_password" in errors:
+            msg = errors["new_password"][0]
+        elif "email" in errors:
+            msg = errors["email"][0]
+        else:
+            msg = "Password reset failed."
+        return error_response(msg)

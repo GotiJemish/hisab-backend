@@ -10,3 +10,6 @@ from .tax import *
 from .account import *
 from .income import *
 from .expense import *
+from .challan import *
+from .challan_item import *
+
