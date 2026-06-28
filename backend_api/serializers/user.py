@@ -5,7 +5,7 @@ from backend_api.models import User, Company
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ['id', 'name', 'address', 'phone', 'email', 'gstin', 'pan', 'website', 'created_at']
+        fields = ['id', 'name', 'address', 'phone', 'email', 'gstin', 'pan', 'website', 'is_approved', 'created_at']
 
 class UserSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)

@@ -2,7 +2,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from backend_api.views import ContactViewSet, ItemsViewSet, InvoiceViewSet, AccountViewSet, IncomeViewSet, ExpenseViewSet, ChallanViewSet
+from backend_api.views import ContactViewSet, ItemsViewSet, InvoiceViewSet, AccountViewSet, IncomeViewSet, ExpenseViewSet, ChallanViewSet, AdminCompanyViewSet
 from backend_api.views.user_views import UserViewSet
 from backend_api.views.role_views import RoleViewSet
 from backend_api.views.tax_views import TaxViewSet
@@ -29,6 +29,7 @@ router.register(r"taxes", TaxViewSet, basename="tax")
 router.register(r"accounts", AccountViewSet, basename="account")
 router.register(r"incomes", IncomeViewSet, basename="income")
 router.register(r"expenses", ExpenseViewSet, basename="expense")
+router.register(r"admin/companies", AdminCompanyViewSet, basename="admin-company")
 
 urlpatterns = [
     path("", include(router.urls)),

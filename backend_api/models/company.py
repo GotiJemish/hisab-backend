@@ -11,6 +11,7 @@ class Company(models.Model):
     gstin = models.CharField(max_length=15, blank=True, null=True)
     pan = models.CharField(max_length=10, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

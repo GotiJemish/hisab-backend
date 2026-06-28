@@ -35,7 +35,7 @@ class RegisterSerializer(serializers.Serializer):
         company = None
         if company_name:
             from backend_api.models.company import Company
-            company = Company.objects.create(name=company_name)
+            company = Company.objects.create(name=company_name, email=email)
 
         user, created = User.objects.get_or_create(
             email=email,
@@ -161,7 +161,7 @@ class SetPasswordSerializer(serializers.Serializer):
 
 # 4️⃣ LOGIN SERIALIZER
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
+    email = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, required=True)
 
     def validate(self, data):
@@ -178,6 +178,14 @@ class LoginSerializer(serializers.Serializer):
                 {
                     "success": False,
                     "message": "Account not verified. Please verify your email first.",
+                }
+            )
+
+        if user.role != "SUPER_ADMIN" and user.company and not user.company.is_approved:
+            raise serializers.ValidationError(
+                {
+                    "success": False,
+                    "message": "Your organization account is pending admin approval.",
                 }
             )
 

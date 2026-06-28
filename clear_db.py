@@ -4,18 +4,25 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hisab_backend.settings')
 django.setup()
 
-from backend_api.models import Company, Contact, EmailOTP, Invoice, InvoiceItem, Items, User
+from backend_api.models import Company, Contact, EmailOTP, Invoice, InvoiceItem, Items, User, Challan, ChallanItem, Tax, Account, Income, Expense, Role
 from django.contrib.sessions.models import Session
 from django.contrib.admin.models import LogEntry
 
 print("Starting to clear the database...")
 
 # Clear primary application data
-items_count, _ = InvoiceItem.objects.all().delete()
-inv_count, _ = Invoice.objects.all().delete()
-contact_count, _ = Contact.objects.all().delete()
-p_items_count, _ = Items.objects.all().delete()
-otp_count, _ = EmailOTP.objects.all().delete()
+ChallanItem.objects.all().delete()
+Challan.objects.all().delete()
+InvoiceItem.objects.all().delete()
+Invoice.objects.all().delete()
+Contact.objects.all().delete()
+Items.objects.all().delete()
+EmailOTP.objects.all().delete()
+Income.objects.all().delete()
+Expense.objects.all().delete()
+Account.objects.all().delete()
+Role.objects.all().delete()
+Tax.objects.all().delete()
 
 # Delete all users EXCEPT superusers
 users_count, _ = User.objects.filter(is_superuser=False).delete()
@@ -30,6 +37,5 @@ LogEntry.objects.all().delete()
 print("--- Database Cleanup Summary ---")
 print(f"Deleted {users_count} Users (Non-Admins)")
 print(f"Deleted {company_count} Companies")
-print(f"Deleted {inv_count} Invoices & {items_count} Invoice Items")
-print(f"Deleted {contact_count} Contacts, {p_items_count} Items, {otp_count} OTPs")
+print("All application data tables (invoices, challans, contacts, items, accounts, roles, taxes) cleared successfully!")
 print("Superadmin data has been PRESERVED successfully!")
