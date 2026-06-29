@@ -59,7 +59,7 @@ if render_hostname:
     ALLOWED_HOSTS.append(render_hostname)
 
 if DEBUG:
-    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1", "0.0.0.0", "https://frontend-hisab.vercel.app"])
+    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1", "0.0.0.0", "https://hisab-chi.vercel.app/"])
 
 
 # Application definition
