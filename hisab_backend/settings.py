@@ -179,8 +179,9 @@ SILENCED_SYSTEM_CHECKS = ["auth.W004"]
 
 assert os.getenv("EMAIL_ACCOUNT"), "EMAIL_ACCOUNT not set in .env"
 assert os.getenv("EMAIL_PASSWORD"), "EMAIL_PASSWORD not set in .env"
-# Use console backend on Render to avoid SMTP blocks, otherwise use SMTP
-if render_hostname:
+# Use console backend on Render or for Netlify test domains to avoid SMTP blocks
+is_netlify_env = any(domain in origin for domain in ["staging-hisab.netlify.app", "hisab-live.netlify.app"] for origin in CORS_ORIGINS)
+if render_hostname or is_netlify_env:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
