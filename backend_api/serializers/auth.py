@@ -27,47 +27,52 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
+        from django.db import transaction
         email = validated_data["email"]
         company_name = validated_data.get("company_name", "").strip()
 
-        EmailOTP.objects.filter(user__email=email, purpose="register").delete()
+        try:
+            with transaction.atomic():
+                EmailOTP.objects.filter(user__email=email, purpose="register").delete()
 
-        company = None
-        if company_name:
-            from backend_api.models.company import Company
-            company = Company.objects.create(name=company_name, email=email)
+                company = None
+                if company_name:
+                    from backend_api.models.company import Company
+                    company = Company.objects.create(name=company_name, email=email)
 
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={
-                "first_name": validated_data["first_name"],
-                "last_name": validated_data["last_name"],
-                "is_active": False,
-                "company": company,
-                "role": "COMPANY_ADMIN" if company_name else "STAFF"
-            },
-        )
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        "first_name": validated_data["first_name"],
+                        "last_name": validated_data["last_name"],
+                        "is_active": False,
+                        "company": company,
+                        "role": "COMPANY_ADMIN" if company_name else "STAFF"
+                    },
+                )
 
-        if not created and not user.is_active:
-            user.first_name = validated_data["first_name"]
-            user.last_name = validated_data["last_name"]
-            if company:
-                user.company = company
-                user.role = "COMPANY_ADMIN"
-            user.save()
+                if not created and not user.is_active:
+                    user.first_name = validated_data["first_name"]
+                    user.last_name = validated_data["last_name"]
+                    if company:
+                        user.company = company
+                        user.role = "COMPANY_ADMIN"
+                    user.save()
 
-        # Generate new OTP
-        otp = str(random.randint(100000, 999999))
-        EmailOTP.objects.create(user=user, otp=otp, purpose="register")
+                # Generate new OTP
+                otp = str(random.randint(100000, 999999))
+                EmailOTP.objects.create(user=user, otp=otp, purpose="register")
 
-        # Send OTP via email
-        send_mail(
-            subject="Your Registration OTP Code",
-            message=f"Your OTP for registration is: {otp}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
+                # Send OTP via email
+                send_mail(
+                    subject="Your Registration OTP Code",
+                    message=f"Your OTP for registration is: {otp}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+        except Exception as e:
+            raise serializers.ValidationError(f"Failed to send OTP email: {str(e)}. Registration aborted.")
 
         return {
             "success": True,
@@ -221,24 +226,29 @@ class ResendOTPSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
+        from django.db import transaction
         email, purpose = validated_data["email"], validated_data["purpose"]
         user = User.objects.filter(email=email).order_by('-date_joined').first()
         if not user:
             raise serializers.ValidationError("User not found.")
 
-        # Delete old OTPs
-        EmailOTP.objects.filter(user=user, purpose=purpose).delete()
+        try:
+            with transaction.atomic():
+                # Delete old OTPs
+                EmailOTP.objects.filter(user=user, purpose=purpose).delete()
 
-        otp = str(random.randint(100000, 999999))
-        EmailOTP.objects.create(user=user, otp=otp, purpose=purpose)
+                otp = str(random.randint(100000, 999999))
+                EmailOTP.objects.create(user=user, otp=otp, purpose=purpose)
 
-        send_mail(
-            subject="Your OTP Code",
-            message=f"Your OTP for {purpose} is: {otp}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
+                send_mail(
+                    subject="Your OTP Code",
+                    message=f"Your OTP for {purpose} is: {otp}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+        except Exception as e:
+            raise serializers.ValidationError(f"Failed to send OTP email: {str(e)}.")
 
         return {"success": True, "message": f"OTP sent successfully for {purpose}."}
 

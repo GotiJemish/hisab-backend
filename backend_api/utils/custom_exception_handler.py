@@ -8,8 +8,14 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
-        detail = response.data.get("detail", None)
-        message = detail if isinstance(detail, str) else str(response.data)
+        if isinstance(response.data, dict):
+            detail = response.data.get("detail", None)
+            message = detail if isinstance(detail, str) else str(response.data)
+        elif isinstance(response.data, list) and len(response.data) > 0:
+            message = str(response.data[0])
+        else:
+            message = str(response.data)
+            
         return Response(
             {"success": False, "message": message}, status=response.status_code
         )

@@ -22,40 +22,44 @@ class ForgotPasswordSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
+        from django.db import transaction
+        from django.conf import settings
         user = validated_data["user"]
         email = user.email
 
-        from django.conf import settings
+        try:
+            with transaction.atomic():
+                if user.role == "STAFF":
+                    # For company staff, generate a new password and email it
+                    new_password = str(random.randint(10000000, 99999999))
+                    user.set_password(new_password)
+                    user.save()
+                    
+                    send_mail(
+                        subject="Your New System Password",
+                        message=f"Hello {user.first_name},\n\nYour password has been reset. Your new login password is: {new_password}\n\nPlease log in and change your password.",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,
+                    )
+                    return {"success": True, "message": "A new password has been sent to your email address."}
+                else:
+                    # For company admins / super admins, use OTP flow
+                    EmailOTP.objects.filter(user=user, purpose="forgot").delete()
+                    otp = str(random.randint(100000, 999999))
+                    EmailOTP.objects.create(user=user, otp=otp, purpose="forgot")
 
-        if user.role == "STAFF":
-            # For company staff, generate a new password and email it
-            new_password = str(random.randint(10000000, 99999999))
-            user.set_password(new_password)
-            user.save()
-            
-            send_mail(
-                subject="Your New System Password",
-                message=f"Hello {user.first_name},\n\nYour password has been reset. Your new login password is: {new_password}\n\nPlease log in and change your password.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-            return {"success": True, "message": "A new password has been sent to your email address."}
-        else:
-            # For company admins / super admins, use OTP flow
-            EmailOTP.objects.filter(user=user, purpose="forgot").delete()
-            otp = str(random.randint(100000, 999999))
-            EmailOTP.objects.create(user=user, otp=otp, purpose="forgot")
+                    send_mail(
+                        subject="Password Reset OTP",
+                        message=f"Your OTP to reset password is: {otp}",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[email],
+                        fail_silently=False,
+                    )
 
-            send_mail(
-                subject="Password Reset OTP",
-                message=f"Your OTP to reset password is: {otp}",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-
-            return {"success": True, "message": "OTP sent successfully to your email for password reset."}
+                    return {"success": True, "message": "OTP sent successfully to your email for password reset."}
+        except Exception as e:
+            raise serializers.ValidationError(f"Failed to send email: {str(e)}")
 
 
 class VerifyForgotOTPSerializer(serializers.Serializer):
