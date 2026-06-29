@@ -179,8 +179,11 @@ SILENCED_SYSTEM_CHECKS = ["auth.W004"]
 
 assert os.getenv("EMAIL_ACCOUNT"), "EMAIL_ACCOUNT not set in .env"
 assert os.getenv("EMAIL_PASSWORD"), "EMAIL_PASSWORD not set in .env"
-# For development, print emails to console
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# Use console backend on Render to avoid SMTP blocks, otherwise use SMTP
+if render_hostname:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_SSL = False
