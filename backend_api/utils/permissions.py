@@ -12,6 +12,11 @@ class HasCompanyModulePermission(permissions.BasePermission):
         if not user.is_authenticated:
             return False
 
+        # Block write operations if user's company is on hold
+        if user.role != 'SUPER_ADMIN' and user.company and user.company.status == 'on_hold':
+            if request.method not in permissions.SAFE_METHODS:
+                return False
+
         # SUPER_ADMIN and COMPANY_ADMIN always have full permissions
         if user.role in ['SUPER_ADMIN', 'COMPANY_ADMIN']:
             return True

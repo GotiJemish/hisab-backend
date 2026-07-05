@@ -186,13 +186,21 @@ class LoginSerializer(serializers.Serializer):
                 }
             )
 
-        if user.role != "SUPER_ADMIN" and user.company and not user.company.is_approved:
-            raise serializers.ValidationError(
-                {
-                    "success": False,
-                    "message": "Your organization account is pending admin approval.",
-                }
-            )
+        if user.role != "SUPER_ADMIN" and user.company:
+            if user.company.status == "rejected":
+                raise serializers.ValidationError(
+                    {
+                        "success": False,
+                        "message": "Your organization registration has been rejected.",
+                    }
+                )
+            elif user.company.status == "pending":
+                raise serializers.ValidationError(
+                    {
+                        "success": False,
+                        "message": "Your organization account is pending admin approval.",
+                    }
+                )
 
         # ✅ Return user so the view can access it
         data["user"] = user

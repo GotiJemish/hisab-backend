@@ -11,9 +11,20 @@ class Company(models.Model):
     gstin = models.CharField(max_length=15, blank=True, null=True)
     pan = models.CharField(max_length=10, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("on_hold", "On Hold"),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        self.is_approved = (self.status == "approved")
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
