@@ -29,6 +29,11 @@ class ChallanViewSet(viewsets.ModelViewSet):
     ]
     filterset_fields = ["invoice_type", "supply_type", "invoice_date", "total_amount"]
 
+    def get_permissions(self):
+        if self.action == "public_retrieve":
+            return []
+        return super().get_permissions()
+
     def get_queryset(self):
         user = self.request.user
         if user.company:
@@ -118,4 +123,33 @@ class ChallanViewSet(viewsets.ModelViewSet):
         challan.delete()
         return success_response(
             "Challan deleted successfully.", {}, status.HTTP_204_NO_CONTENT
+        )
+
+    @action(detail=False, methods=["GET"], url_path=r"public/(?P<bill_id>[a-zA-Z0-9_-]+)")
+    def public_retrieve(self, request, bill_id=None):
+        try:
+            challan = Challan.objects.get(bill_id=bill_id)
+        except Challan.DoesNotExist:
+            return error_response(
+                {"error": "Challan not found"}, status.HTTP_404_NOT_FOUND
+            )
+
+        challan_data = ChallanSerializer(challan).data
+
+        from backend_api.serializers.contact import ContactSerializer
+        contact_data = ContactSerializer(challan.contact).data
+
+        from backend_api.serializers.user import CompanySerializer
+        company_data = None
+        if challan.user and challan.user.company:
+            company_data = CompanySerializer(challan.user.company).data
+
+        return success_response(
+            "Challan details fetched successfully.",
+            {
+                "invoice": challan_data,
+                "contact": contact_data,
+                "company": company_data,
+            },
+            status.HTTP_200_OK,
         )

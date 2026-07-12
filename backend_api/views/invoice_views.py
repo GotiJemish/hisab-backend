@@ -32,6 +32,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     ]
     filterset_fields = ["invoice_type", "supply_type", "invoice_date", "total_amount"]
 
+    def get_permissions(self):
+        if self.action == "public_retrieve":
+            return []
+        return super().get_permissions()
+
     def get_queryset(self):
         user = self.request.user
         if user.company:
@@ -122,4 +127,33 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         invoice.delete()
         return success_response(
             "Invoice deleted successfully.", {}, status.HTTP_204_NO_CONTENT
+        )
+
+    @action(detail=False, methods=["GET"], url_path=r"public/(?P<bill_id>[a-zA-Z0-9_-]+)")
+    def public_retrieve(self, request, bill_id=None):
+        try:
+            invoice = Invoice.objects.get(bill_id=bill_id)
+        except Invoice.DoesNotExist:
+            return error_response(
+                {"error": "Invoice not found"}, status.HTTP_404_NOT_FOUND
+            )
+
+        invoice_data = InvoiceSerializer(invoice).data
+
+        from backend_api.serializers.contact import ContactSerializer
+        contact_data = ContactSerializer(invoice.contact).data
+
+        from backend_api.serializers.user import CompanySerializer
+        company_data = None
+        if invoice.user and invoice.user.company:
+            company_data = CompanySerializer(invoice.user.company).data
+
+        return success_response(
+            "Invoice details fetched successfully.",
+            {
+                "invoice": invoice_data,
+                "contact": contact_data,
+                "company": company_data,
+            },
+            status.HTTP_200_OK,
         )
